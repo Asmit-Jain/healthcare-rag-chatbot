@@ -1,0 +1,6 @@
+chroma_database/
+raw_data/
+*.jsonl
+*.json
+.ipynb_checkpoints/
+__pycache__/
