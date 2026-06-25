@@ -1,0 +1,277 @@
+[
+  {
+    "query": "What are the basic conditions for an applicant to be eligible for JSSK?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_jssk_chunk_4"]
+  },
+  {
+    "query": "How is an offline registration or referral handled for the Janani Shishu Suraksha Karyakram?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_jssk_chunk_5"]
+  },
+  {
+    "query": "What are the rules regarding delivery location for general institutional delivery under JSY?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_jsy1_chunk_9"]
+  },
+  {
+    "query": "Do Above Poverty Line women in Low Performing States get any benefits under Janani Suraksha Yojana?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_jsy1_chunk_9"]
+  },
+  {
+    "query": "What certificates must a Scheduled Caste woman produce to claim maternal benefits in an accredited private health facility?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_jsy1_chunk_10"]
+  },
+  {
+    "query": "What documents and cards must be carried by a BPL applicant for home delivery verification under JSY?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_jsy1_chunk_10"]
+  },
+  {
+    "query": "Explain what the eligibility rules are for Janani Suraksha Yojana across both Low Performing and High Performing states, including private vs home delivery conditions.",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_jsy1_chunk_9", "gov_scheme_jsy1_chunk_10"]
+  },
+  {
+    "query": "What individual level characteristics make an old person highly vulnerable to becoming a victim of maltreatment?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_abuse_of_older_people_chunk_6"]
+  },
+  {
+    "query": "How do domestic relationship-level factors influence the risk of perpetrator violence against elders?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_abuse_of_older_people_chunk_6"]
+  },
+  {
+    "query": "What are the most promising money management or helpline strategies to prevent financial exploitation of older adults?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_abuse_of_older_people_chunk_7"]
+  },
+  {
+    "query": "Which sector has taken a leading role globally in raising public concern about elder mistreatment?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_abuse_of_older_people_chunk_7"]
+  },
+  {
+    "query": "What are the standard physical signs and non-specific symptoms indicating a lack of red blood cells?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_anaemia_chunk_4"]
+  },
+  {
+    "query": "What serious conditions or clinical presentations develop if a person suffers from severe blood hemoglobin drops?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_anaemia_chunk_4"]
+  },
+  {
+    "query": "What are the common clinical signs of a lack of red blood cells, and can this condition be cured simply by eating more spinach?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_anaemia_chunk_4", "who_anaemia_chunk_13"]
+  },
+  {
+    "query": "How many individuals globally suffer from snake envenomation annually and what is the required remedy?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_animal_bites_chunk_1"]
+  },
+  {
+    "query": "What specific pathogens and health hazards are associated with a standard dog bite injury in children?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_animal_bites_chunk_1"]
+  },
+  {
+    "query": "How do biological, psychological, and environmental adverse life experiences interact to trigger severe nervousness and worry?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_anxiety_disorders_chunk_6"]
+  },
+  {
+    "query": "What are the effective community-based interventions or school programs to improve emotional coping mechanisms against anxiety?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_anxiety_disorders_chunk_6"]
+  },
+  {
+    "query": "What variables influence the trajectory, onset, and clinical outcomes of individuals diagnosed with manic-depressive mood states?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_bipolar_disorder_chunk_7"]
+  },
+  {
+    "query": "Can favorable working environments act as protective parameters against the clinical worsening of bipolar disorder?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_bipolar_disorder_chunk_7"]
+  },
+  {
+    "query": "What are the long-term cognitive, language, and motor development consequences of early onset irreversible sight loss in infants?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_blindness_and_vision_impairment_chunk_5"]
+  },
+  {
+    "query": "What is the global financial and productivity loss associated with addressing the global cost gap of unmet eye care?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_blindness_and_vision_impairment_chunk_5"]
+  },
+  {
+    "query": "What is the vector pathway or exact path of transmission for the Mycobacterium ulcerans bacteria?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_buruli_ulcer_mycobacterium_ulcerans_infection_chunk_3"]
+  },
+  {
+    "query": "What is the primary maternal health target date when the 100% centrally sponsored Janani Suraksha Yojana was executed?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_jsy1_chunk_2"]
+  },
+  {
+    "query": "How much financial support is allocated for hiring medical specialists to handle complicated C-sections under JSY?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_jsy1_chunk_2"]
+  },
+  {
+    "query": "What are the distinct cash compensation structures under the mother's package for low performing versus high performing states?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_jsy1_chunk_3"]
+  },
+  {
+    "query": "What are the financial audit conditions and distribution timelines that make cash entitlements illegitimate under public maternity aid?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_jsy1_chunk_3"]
+  },
+  {
+    "query": "What is Janani Suraksha Yojana, what specific financial benefits does it provide for rural mothers, and is there a strict time window to claim this cash?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_jsy1_chunk_2", "gov_scheme_jsy1_chunk_3", "gov_scheme_jsy1_chunk_20"]
+  },
+  {
+    "query": "How much monetary support is sent to a mother's bank account via direct electronic transfer after each antenatal medical exam?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_mmus_chunk_3"]
+  },
+  {
+    "query": "What specific components of newborn, infant care, and zero-dose immunizations are covered for zero out-of-pocket expenses under SUMAN?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_suman_chunk_3"]
+  },
+  {
+    "query": "What home-to-facility logistic networks and free transport amenities are guaranteed under the Surakshit Matritva Aashwasan layout?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_suman_chunk_3"]
+  },
+  {
+    "query": "Which government initiative supports individual household latrines construction for families residing specifically in cities?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_sbm_u_chunk_1"]
+  },
+  {
+    "query": "What are the primary operational infrastructure tracks under Swachh Bharat Mission – Urban 2.0 regarding solid waste and insanitary pour-flush units?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_sbm_u_chunk_2"]
+  },
+  {
+    "query": "What sanitation scheme covers open defecation free sustainability and liquid refuse tracking inside Indian villages?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_sbm_g_ii_chunk_1"]
+  },
+  {
+    "query": "What is the official lifespan and target period for implementing the mission mode ODF Plus parameters under SBM Grameen Phase II?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_sbm_g_ii_chunk_2"]
+  },
+  {
+    "query": "What were the leading site locations and mortality figures for colorectal, tracheal, gastric, and bronchus malignant cells in 2022?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_cancer_chunk_1"]
+  },
+  {
+    "query": "What is the global impact of cancer in terms of cases, and what are the complete steps involved in detecting it early?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_cancer_chunk_1", "who_cancer_chunk_6", "who_cancer_chunk_7", "who_cancer_chunk_8"]
+  },
+  {
+    "query": "What are the global 90-70-90 targets to completely eliminate human papillomavirus and pre-cancer conditions across women by age 15?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_cervical_cancer_chunk_1"]
+  },
+  {
+    "query": "How many times more likely is an individual living with an immunocompromised HIV state to develop cervical tissue mutations?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_cervical_cancer_chunk_1"]
+  },
+  {
+    "query": "How do resource-intensive screening configurations like mammography for women aged 50-69 differ from symptomatic clinical tracking options?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_cancer_chunk_7"]
+  },
+  {
+    "query": "What parameters determine selection algorithms to prevent excessive false positive reports during HPV DNA diagnostic tests?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_cancer_chunk_7"]
+  },
+  {
+    "query": "What foundational baseline or cross-cutting quality framework applies equally to screening and clinical identification systems?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_cancer_chunk_8"]
+  },
+  {
+    "query": "How does a pregnant mother receive the first 3000 rupees installation versus the subsequent 2000 rupees installment under PMMVY rules?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_pmmvy_chunk_4"]
+  },
+  {
+    "query": "What are the specific parameters and immunization milestones required up to 14 weeks to unlock cash allocations for a firstborn infant?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_pmmvy_chunk_4"]
+  },
+  {
+    "query": "How are cash incentives distributed for the first child versus a second girl child under the Pradhan Mantri Matru Vandana Yojana?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_pmmvy_chunk_4", "gov_scheme_pmmvy_chunk_5"]
+  },
+  {
+    "query": "What is the single payout structure rule for future pregnancies following a clinical emergency like a miscarriage or a stillborn baby?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_pmmvy_chunk_5"]
+  },
+  {
+    "query": "How much financial payout is allocated under the Pradhan Mantri Matru Vandana Yojana if the second child delivered is a girl?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_pmmvy_chunk_5"]
+  },
+  {
+    "query": "What is the primary target objective of JSSK regarding newborn and infant medical therapy?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_jssk_chunk_7"]
+  },
+  {
+    "query": "What is the strict deadline window to disburse maternity cash benefits before it triggers audit queries?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_jsy1_chunk_20"]
+  },
+  {
+    "query": "At what specific age threshold and menstrual cycle baseline should females initiate physical manual self-examination for breast tissue anomalies?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_breast_cancer_chunk_13"]
+  },
+  {
+    "query": "Do I require post-exposure prophylaxis or clinical PEP protocols if an animal handles me roughly but my epidermis is completely unbroken?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": ["who_burns_chunk_15"]
+  },
+  {
+    "query": "Which scheduled caste welfare platform offers medical compensation for severe life-threatening conditions like leukemia?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": ["gov_scheme_krbamas_chunk_7"]
+  },
+  {
+    "query": "How do I check my PM Kisan registration eligibility or financial payment tracking status online?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": []
+  },
+  {
+    "query": "What are the standard subsidy parameters for the crop insurance premiums under the Pradhan Mantri Fasal Bima Yojana?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": []
+  },
+  {
+    "query": "What is the chemical composition formula for diagnosing advanced non-small cell pulmonary carcinomas?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": []
+  }
+]
