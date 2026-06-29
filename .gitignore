@@ -4,3 +4,4 @@ raw_data/
 *.json
 .ipynb_checkpoints/
 __pycache__/
+!golden_test_set.json

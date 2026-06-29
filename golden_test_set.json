@@ -1,277 +1,365 @@
 [
   {
-    "query": "What are the basic conditions for an applicant to be eligible for JSSK?",
-    "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_jssk_chunk_4"]
-  },
-  {
-    "query": "How is an offline registration or referral handled for the Janani Shishu Suraksha Karyakram?",
-    "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_jssk_chunk_5"]
-  },
-  {
-    "query": "What are the rules regarding delivery location for general institutional delivery under JSY?",
-    "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_jsy1_chunk_9"]
-  },
-  {
-    "query": "Do Above Poverty Line women in Low Performing States get any benefits under Janani Suraksha Yojana?",
-    "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_jsy1_chunk_9"]
-  },
-  {
-    "query": "What certificates must a Scheduled Caste woman produce to claim maternal benefits in an accredited private health facility?",
-    "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_jsy1_chunk_10"]
-  },
-  {
-    "query": "What documents and cards must be carried by a BPL applicant for home delivery verification under JSY?",
-    "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_jsy1_chunk_10"]
-  },
-  {
-    "query": "Explain what the eligibility rules are for Janani Suraksha Yojana across both Low Performing and High Performing states, including private vs home delivery conditions.",
-    "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_jsy1_chunk_9", "gov_scheme_jsy1_chunk_10"]
-  },
-  {
-    "query": "What individual level characteristics make an old person highly vulnerable to becoming a victim of maltreatment?",
+    "query": "What is bipolar disorder characterized by?",
     "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_abuse_of_older_people_chunk_6"]
+    "expected_chunk_ids": [
+      "who_bipolar_disorder_chunk_1"
+    ]
   },
   {
-    "query": "How do domestic relationship-level factors influence the risk of perpetrator violence against elders?",
+    "query": "How many people in the world suffer from poor eyesight or blindness?",
     "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_abuse_of_older_people_chunk_6"]
+    "expected_chunk_ids": [
+      "who_blindness_and_vision_impairment_chunk_1"
+    ]
   },
   {
-    "query": "What are the most promising money management or helpline strategies to prevent financial exploitation of older adults?",
+    "query": "Should I wear a mask in public settings in India right now?",
     "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_abuse_of_older_people_chunk_7"]
+    "expected_chunk_ids": [
+      "who_coronavirus_disease_covid_19_chunk_17"
+    ]
   },
   {
-    "query": "Which sector has taken a leading role globally in raising public concern about elder mistreatment?",
+    "query": "Why is Chagas disease impossible to eradicate?",
     "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_abuse_of_older_people_chunk_7"]
+    "expected_chunk_ids": [
+      "who_chagas_disease_also_known_as_american_trypanosomiasis_chunk_8"
+    ]
   },
   {
-    "query": "What are the standard physical signs and non-specific symptoms indicating a lack of red blood cells?",
+    "query": "What are the common symptoms of diabetes and does type 2 show up slowly?",
     "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_anaemia_chunk_4"]
+    "expected_chunk_ids": [
+      "who_diabetes_chunk_3",
+      "who_diabetes_chunk_5"
+    ]
   },
   {
-    "query": "What serious conditions or clinical presentations develop if a person suffers from severe blood hemoglobin drops?",
+    "query": "How many dengue infections are estimated to occur annually?",
     "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_anaemia_chunk_4"]
+    "expected_chunk_ids": [
+      "who_dengue_chunk_1"
+    ]
   },
   {
-    "query": "What are the common clinical signs of a lack of red blood cells, and can this condition be cured simply by eating more spinach?",
-    "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_anaemia_chunk_4", "who_anaemia_chunk_13"]
-  },
-  {
-    "query": "How many individuals globally suffer from snake envenomation annually and what is the required remedy?",
-    "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_animal_bites_chunk_1"]
-  },
-  {
-    "query": "What specific pathogens and health hazards are associated with a standard dog bite injury in children?",
-    "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_animal_bites_chunk_1"]
-  },
-  {
-    "query": "How do biological, psychological, and environmental adverse life experiences interact to trigger severe nervousness and worry?",
-    "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_anxiety_disorders_chunk_6"]
-  },
-  {
-    "query": "What are the effective community-based interventions or school programs to improve emotional coping mechanisms against anxiety?",
-    "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_anxiety_disorders_chunk_6"]
-  },
-  {
-    "query": "What variables influence the trajectory, onset, and clinical outcomes of individuals diagnosed with manic-depressive mood states?",
-    "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_bipolar_disorder_chunk_7"]
-  },
-  {
-    "query": "Can favorable working environments act as protective parameters against the clinical worsening of bipolar disorder?",
-    "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_bipolar_disorder_chunk_7"]
-  },
-  {
-    "query": "What are the long-term cognitive, language, and motor development consequences of early onset irreversible sight loss in infants?",
-    "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_blindness_and_vision_impairment_chunk_5"]
-  },
-  {
-    "query": "What is the global financial and productivity loss associated with addressing the global cost gap of unmet eye care?",
-    "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_blindness_and_vision_impairment_chunk_5"]
-  },
-  {
-    "query": "What is the vector pathway or exact path of transmission for the Mycobacterium ulcerans bacteria?",
-    "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_buruli_ulcer_mycobacterium_ulcerans_infection_chunk_3"]
-  },
-  {
-    "query": "What is the primary maternal health target date when the 100% centrally sponsored Janani Suraksha Yojana was executed?",
+    "query": "What are the helpline numbers to register a grievance or share feedback for BSKY in Odisha?",
     "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_jsy1_chunk_2"]
+    "expected_chunk_ids": [
+      "gov_scheme_bsky_chcsgh_chunk_2",
+      "gov_scheme_bsky_chcsgh_chunk_3"
+    ]
   },
   {
-    "query": "How much financial support is allocated for hiring medical specialists to handle complicated C-sections under JSY?",
+    "query": "Is there any monthly financial assistance for poor SC patients with prolonged diseases in Puducherry?",
     "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_jsy1_chunk_2"]
+    "expected_chunk_ids": [
+      "gov_scheme_fapscpspi_chunk_1",
+      "gov_scheme_fapscpspi_chunk_2",
+      "gov_scheme_fapscpspi_chunk_3"
+    ]
   },
   {
-    "query": "What are the distinct cash compensation structures under the mother's package for low performing versus high performing states?",
+    "query": "What are the eligibility criteria to receive financial assistance for prolonged diseases in Puducherry?",
     "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_jsy1_chunk_3"]
+    "expected_chunk_ids": [
+      "gov_scheme_fapscpspi_chunk_4"
+    ]
   },
   {
-    "query": "What are the financial audit conditions and distribution timelines that make cash entitlements illegitimate under public maternity aid?",
+    "query": "What are the monthly prenatal and postnatal installment splits of the 12000 rupees grant for SC pregnant mothers in Puducherry?",
     "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_jsy1_chunk_3"]
+    "expected_chunk_ids": [
+      "gov_scheme_gfapscplw_chunk_3"
+    ]
   },
   {
-    "query": "What is Janani Suraksha Yojana, what specific financial benefits does it provide for rural mothers, and is there a strict time window to claim this cash?",
+    "query": "Do pregnant women get free meals in the hospital under the JSSK scheme?",
     "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_jsy1_chunk_2", "gov_scheme_jsy1_chunk_3", "gov_scheme_jsy1_chunk_20"]
+    "expected_chunk_ids": [
+      "gov_scheme_jssk_chunk_2",
+      "gov_scheme_jssk_chunk_17"
+    ]
   },
   {
-    "query": "How much monetary support is sent to a mother's bank account via direct electronic transfer after each antenatal medical exam?",
+    "query": "Where can I check if my JSY cash assistance has been successfully disbursed?",
     "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_mmus_chunk_3"]
+    "expected_chunk_ids": [
+      "gov_scheme_jsy1_chunk_24"
+    ]
   },
   {
-    "query": "What specific components of newborn, infant care, and zero-dose immunizations are covered for zero out-of-pocket expenses under SUMAN?",
+    "query": "What type of meals are served to children under the PM POSHAN scheme?",
     "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_suman_chunk_3"]
+    "expected_chunk_ids": [
+      "gov_scheme_pm_poshan_chunk_2",
+      "gov_scheme_pm_poshan_chunk_7",
+      "gov_scheme_pm_poshan_chunk_9"
+    ]
   },
   {
-    "query": "What home-to-facility logistic networks and free transport amenities are guaranteed under the Surakshit Matritva Aashwasan layout?",
-    "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_suman_chunk_3"]
-  },
-  {
-    "query": "Which government initiative supports individual household latrines construction for families residing specifically in cities?",
-    "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_sbm_u_chunk_1"]
-  },
-  {
-    "query": "What are the primary operational infrastructure tracks under Swachh Bharat Mission – Urban 2.0 regarding solid waste and insanitary pour-flush units?",
-    "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_sbm_u_chunk_2"]
-  },
-  {
-    "query": "What sanitation scheme covers open defecation free sustainability and liquid refuse tracking inside Indian villages?",
-    "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_sbm_g_ii_chunk_1"]
-  },
-  {
-    "query": "What is the official lifespan and target period for implementing the mission mode ODF Plus parameters under SBM Grameen Phase II?",
-    "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_sbm_g_ii_chunk_2"]
-  },
-  {
-    "query": "What were the leading site locations and mortality figures for colorectal, tracheal, gastric, and bronchus malignant cells in 2022?",
+    "query": "Is mpox the same disease as smallpox?",
     "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_cancer_chunk_1"]
+    "expected_chunk_ids": [
+      "who_mpox_chunk_20"
+    ]
   },
   {
-    "query": "What is the global impact of cancer in terms of cases, and what are the complete steps involved in detecting it early?",
+    "query": "I have had a bad cough for over two weeks now. Could it be tuberclosis and should I see a doctor?",
     "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_cancer_chunk_1", "who_cancer_chunk_6", "who_cancer_chunk_7", "who_cancer_chunk_8"]
+    "expected_chunk_ids": [
+      "who_tuberculosis_chunk_14"
+    ]
   },
   {
-    "query": "What are the global 90-70-90 targets to completely eliminate human papillomavirus and pre-cancer conditions across women by age 15?",
+    "query": "What steps can I take in my daily life to reduce the risk of developing cancer?",
     "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_cervical_cancer_chunk_1"]
+    "expected_chunk_ids": [
+      "who_cancer_chunk_5"
+    ]
   },
   {
-    "query": "How many times more likely is an individual living with an immunocompromised HIV state to develop cervical tissue mutations?",
+    "query": "Have there been any confirmed cases of Ebola within India?",
     "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_cervical_cancer_chunk_1"]
+    "expected_chunk_ids": [
+      "who_ebola_disease_chunk_14"
+    ]
   },
   {
-    "query": "How do resource-intensive screening configurations like mammography for women aged 50-69 differ from symptomatic clinical tracking options?",
+    "query": "Why am I feeling constantly tired, having pale skin, and getting dizzy or out of breath easily?",
     "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_cancer_chunk_7"]
+    "expected_chunk_ids": [
+      "who_anaemia_chunk_15"
+    ]
   },
   {
-    "query": "What parameters determine selection algorithms to prevent excessive false positive reports during HPV DNA diagnostic tests?",
+    "query": "Is swine flu (H1N1) still active and considered a risk in India?",
     "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_cancer_chunk_7"]
+    "expected_chunk_ids": [
+      "who_influenza_seasonal_chunk_12"
+    ]
   },
   {
-    "query": "What foundational baseline or cross-cutting quality framework applies equally to screening and clinical identification systems?",
+    "query": "Can I get Hepatitis B by sharing food, water, or eating utensils with someone who has it?",
     "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_cancer_chunk_8"]
+    "expected_chunk_ids": [
+      "who_hepatitis_b_chunk_17"
+    ]
   },
   {
-    "query": "How does a pregnant mother receive the first 3000 rupees installation versus the subsequent 2000 rupees installment under PMMVY rules?",
+    "query": "What are the age limits and basic eligibility criteria for women to receive cash incentives under the Pradhan Mantri Matru Vandana Yojana?",
     "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_pmmvy_chunk_4"]
+    "expected_chunk_ids": [
+      "gov_scheme_pmmvy_chunk_6"
+    ]
   },
   {
-    "query": "What are the specific parameters and immunization milestones required up to 14 weeks to unlock cash allocations for a firstborn infant?",
+    "query": "Is there any financial help from the government to construct a toilet in rural homes under the swach bharat scheme?",
     "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_pmmvy_chunk_4"]
+    "expected_chunk_ids": [
+      "gov_scheme_sbm_g_i_chunk_3"
+    ]
   },
   {
-    "query": "How are cash incentives distributed for the first child versus a second girl child under the Pradhan Mantri Matru Vandana Yojana?",
+    "query": "If a factory or mining worker dies due to silicosis, how much financial compensation does their family or legal heir get?",
     "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_pmmvy_chunk_4", "gov_scheme_pmmvy_chunk_5"]
+    "expected_chunk_ids": [
+      "gov_scheme_sfas_chunk_3"
+    ]
   },
   {
-    "query": "What is the single payout structure rule for future pregnancies following a clinical emergency like a miscarriage or a stillborn baby?",
+    "query": "Who is eligible to get medical financial assistance from the Rajasthan Chief Minister's Relief Fund?",
     "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_pmmvy_chunk_5"]
+    "expected_chunk_ids": [
+      "gov_scheme_rcmrf_mh_chunk_1",
+      "gov_scheme_rcmrf_mh_chunk_3",
+      "gov_scheme_rcmrf_mh_chunk_9"
+    ]
   },
   {
-    "query": "How much financial payout is allocated under the Pradhan Mantri Matru Vandana Yojana if the second child delivered is a girl?",
+    "query": "What kind of primary healthcare services are offered at Ayushman Bharat Health and Wellness Centres?",
     "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_pmmvy_chunk_5"]
+    "expected_chunk_ids": [
+      "gov_scheme_ahwc_chunk_1"
+    ]
   },
   {
-    "query": "What is the primary target objective of JSSK regarding newborn and infant medical therapy?",
+    "query": "What is the maximum amount of money the Goa Mediclaim Scheme provides for cancer treatment?",
     "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_jssk_chunk_7"]
+    "expected_chunk_ids": [
+      "gov_scheme_gms_chunk_14"
+    ]
   },
   {
-    "query": "What is the strict deadline window to disburse maternity cash benefits before it triggers audit queries?",
-    "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_jsy1_chunk_20"]
+    "query": "If I have had a cough for more than 2 weeks and get diagnosed with TB, does the government provide monthly financial support for nutrition?",
+    "expected_category": "Mixed (Disease & Scheme)",
+    "expected_chunk_ids": [
+      "who_tuberculosis_chunk_14",
+      "gov_scheme_nikshay_chunk_2",
+      "gov_scheme_nikshay_chunk_3"
+    ]
   },
   {
-    "query": "At what specific age threshold and menstrual cycle baseline should females initiate physical manual self-examination for breast tissue anomalies?",
-    "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_breast_cancer_chunk_13"]
+    "query": "Where can I get free breast cancer screening in India, and what kind of primary health services do these centers offer?",
+    "expected_category": "Mixed (Disease & Scheme)",
+    "expected_chunk_ids": [
+      "who_breast_cancer_chunk_15",
+      "who_the_top_10_causes_of_death_chunk_15",
+      "gov_scheme_ab_pmjay_chunk_3"
+    ]
   },
   {
-    "query": "Do I require post-exposure prophylaxis or clinical PEP protocols if an animal handles me roughly but my epidermis is completely unbroken?",
-    "expected_category": "Disease & Awareness",
-    "expected_chunk_ids": ["who_burns_chunk_15"]
+    "query": "Why is severe anaemia dangerous during pregnancy, and does the JSSK scheme provide free food to pregnant women during their hospital stay?",
+    "expected_category": "Mixed (Disease & Scheme)",
+    "expected_chunk_ids": [
+      "who_anaemia_chunk_16",
+      "gov_scheme_jssk_chunk_2",
+      "gov_scheme_jssk_chunk_17"
+    ]
   },
   {
-    "query": "Which scheduled caste welfare platform offers medical compensation for severe life-threatening conditions like leukemia?",
-    "expected_category": "Government Healthcare Scheme",
-    "expected_chunk_ids": ["gov_scheme_krbamas_chunk_7"]
+    "query": "How does proper rural sanitation help prevent dengue outbreaks, and what is the goal of Swachh Bharat Mission Phase II?",
+    "expected_category": "Mixed (Disease & Scheme)",
+    "expected_chunk_ids": [
+      "who_dengue_chunk_12",
+      "gov_scheme_sbm_g_ii_chunk_1",
+      "gov_scheme_sbm_g_ii_chunk_10"
+    ]
   },
   {
-    "query": "How do I check my PM Kisan registration eligibility or financial payment tracking status online?",
-    "expected_category": "Government Healthcare Scheme",
+    "query": "What is bipolar disorder, and does the Goa Mediclaim scheme cover treatments for neurological disorders?",
+    "expected_category": "Mixed (Disease & Scheme)",
+    "expected_chunk_ids": [
+      "who_bipolar_disorder_chunk_1",
+      "gov_scheme_gms_chunk_18"
+    ]
+  },
+  {
+    "query": "Why is a correct cancer diagnosis essential before starting treatment, and can cancer patients get medical assistance from the Rajasthan Chief Minister's Relief Fund?",
+    "expected_category": "Mixed (Disease & Scheme)",
+    "expected_chunk_ids": [
+      "who_cancer_chunk_9",
+      "gov_scheme_rcmrf_mh_chunk_1",
+      "gov_scheme_rcmrf_mh_chunk_2",
+      "gov_scheme_rcmrf_mh_chunk_3"
+    ]
+  },
+  {
+    "query": "How can seasonal flu be prevented in school children, and what nutritious meals are provided under the PM POSHAN scheme?",
+    "expected_category": "Mixed (Disease & Scheme)",
+    "expected_chunk_ids": [
+      "who_influenza_seasonal_chunk_4",
+      "who_influenza_seasonal_chunk_5",
+      "gov_scheme_pm_poshan_chunk_2",
+      "gov_scheme_pm_poshan_chunk_7",
+      "gov_scheme_pm_poshan_chunk_9"
+    ]
+  },
+  {
+    "query": "Can high blood pressure cause strokes, and does the BSKY card scheme in Odisha cover treatment for cardiovascular diseases?",
+    "expected_category": "Mixed (Disease & Scheme)",
+    "expected_chunk_ids": [
+      "who_hypertension_chunk_1",
+      "who_stroke_chunk_6",
+      "who_stroke_chunk_14",
+      "gov_scheme_bsky_chcsgh_chunk_1",
+      "gov_scheme_bsky_chcsgh_chunk_4"
+    ]
+  },
+  {
+    "query": "How can I register my farm for the Pradhan Mantri Kisan Samman Nidhi scheme to get 6,000 rupees?",
+    "expected_category": "Out-of-Bounds",
     "expected_chunk_ids": []
   },
   {
-    "query": "What are the standard subsidy parameters for the crop insurance premiums under the Pradhan Mantri Fasal Bima Yojana?",
-    "expected_category": "Government Healthcare Scheme",
+    "query": "What is the process to claim crop insurance if my crops are damaged by heavy rains under PM Fasal Bima Yojana?",
+    "expected_category": "Out-of-Bounds",
     "expected_chunk_ids": []
   },
   {
-    "query": "What is the chemical composition formula for diagnosing advanced non-small cell pulmonary carcinomas?",
+    "query": "How do I apply for a student education loan under the Vidya Lakshmi portal?",
+    "expected_category": "Out-of-Bounds",
+    "expected_chunk_ids": []
+  },
+  {
+    "query": "Can I link my PAN card with my bank account online or do I have to visit the branch?",
+    "expected_category": "Out-of-Bounds",
+    "expected_chunk_ids": []
+  },
+  {
+    "query": "What are the common environmental triggers that can cause or worsen asthma symptoms?",
     "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": [
+      "who_asthma_chunk_1"
+    ]
+  },
+  {
+    "query": "My grandmother is forgetting recent events and getting confused about where she is. Are these early symptoms of dementia?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": [
+      "who_dementia_chunk_3",
+      "who_dementia_chunk_4",
+      "who_ageing_and_health_chunk_11"
+    ]
+  },
+  {
+    "query": "What are the primary medical causes of maternal mortality in developing countries?",
+    "expected_category": "Disease & Awareness",
+    "expected_chunk_ids": [
+      "who_maternal_mortality_chunk_1"
+    ]
+  },
+  {
+    "query": "What is the primary objective of the Surakshit Matritva Aashwasan (SUMAN) scheme?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": [
+      "gov_scheme_suman_chunk_1"
+    ]
+  },
+  {
+    "query": "What is the annual health insurance coverage limit per family under the Ayushman Bharat PM-JAY scheme?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": [
+      "gov_scheme_ab_pmjay_chunk_1",
+      "gov_scheme_ab_pmjay_chunk_3",
+      "gov_scheme_ab_pmjay_chunk_4"
+    ]
+  },
+  {
+    "query": "Can retired state government employees in Goa apply for the Goa Mediclaim Scheme?",
+    "expected_category": "Government Healthcare Scheme",
+    "expected_chunk_ids": [
+      "gov_scheme_gms_chunk_9"
+    ]
+  },
+  {
+    "query": "How can I resolve the Blue Screen of Death error on my Windows laptop?",
+    "expected_category": "Out-of-Bounds",
+    "expected_chunk_ids": []
+  },
+  {
+    "query": "What is the capital city of Australia and what is its population?",
+    "expected_category": "Out-of-Bounds",
+    "expected_chunk_ids": []
+  },
+  {
+    "query": "How do I calculate the derivative of a quadratic equation using first principles?",
+    "expected_category": "Out-of-Bounds",
+    "expected_chunk_ids": []
+  },
+  {
+    "query": "What are the key differences between Python and Java programming languages?",
+    "expected_category": "Out-of-Bounds",
+    "expected_chunk_ids": []
+  },
+  {
+    "query": "What is the recipe to bake a classic New York style cheesecake at home?",
+    "expected_category": "Out-of-Bounds",
+    "expected_chunk_ids": []
+  },
+  {
+    "query": "How do I invest in mutual funds and what is a SIP?",
+    "expected_category": "Out-of-Bounds",
     "expected_chunk_ids": []
   }
 ]
