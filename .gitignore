@@ -1,7 +1,17 @@
 chroma_database/
+chroma_db/
 raw_data/
 *.jsonl
 *.json
 .ipynb_checkpoints/
 __pycache__/
 !golden_test_set.json
+
+# Secrets & Environment Variables (DO NOT PUSH TO GITHUB)
+.env
+.env.local
+
+# Temp outputs and scratch scripts
+output.txt
+retrieval_output.txt
+scratch/
