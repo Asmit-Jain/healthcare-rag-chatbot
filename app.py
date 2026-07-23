@@ -373,13 +373,20 @@ for msg_idx, message in enumerate(st.session_state.messages):
         # Clean up plain-text references for the UI bubble if it's assistant's response
         display_content = message["content"]
         if message["role"] == "assistant" and "\n\nReferences:" in display_content:
-            parts = display_content.split("\n\nReferences:")
+            parts = display_content.split("\n\nReferences:", 1)
             answer_part = parts[0]
             disclaimer_part = ""
-            # Re-extract disclaimer to display it at the bottom of the clean response
-            if "Disclaimer:" in parts[1]:
-                disclaimer_text = parts[1].split("Disclaimer:")[1].strip()
-                disclaimer_part = f"\n\n*Disclaimer: {disclaimer_text}*"
+            # Re-extract disclaimer across languages to display it at the bottom of the clean response
+            disclaimer_markers = ["Disclaimer:", "अस्वीकरण:", "Descargo de responsabilidad:", "Avertissement:"]
+            found_marker = None
+            if len(parts) > 1:
+                for marker in disclaimer_markers:
+                    if marker in parts[1]:
+                        found_marker = marker
+                        break
+                if found_marker:
+                    disclaimer_text = parts[1].split(found_marker, 1)[1].strip()
+                    disclaimer_part = f"\n\n*{found_marker} {disclaimer_text}*"
             display_content = answer_part + disclaimer_part
             
         st.markdown(display_content)

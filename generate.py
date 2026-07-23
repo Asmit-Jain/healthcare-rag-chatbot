@@ -190,11 +190,17 @@ def format_response_with_citations(llm_response, context_chunks):
     bibliography = "\n\nReferences:\n" + "\n".join(references)
     
     # Place references before the medical disclaimer if present to look clean
-    disclaimer_marker = "Disclaimer:"
-    if disclaimer_marker in llm_response:
-        parts = llm_response.split(disclaimer_marker)
+    disclaimer_markers = ["Disclaimer:", "अस्वीकरण:", "Descargo de responsabilidad:", "Avertissement:"]
+    found_marker = None
+    for marker in disclaimer_markers:
+        if marker in llm_response:
+            found_marker = marker
+            break
+
+    if found_marker:
+        parts = llm_response.split(found_marker, 1)
         main_body = parts[0].strip()
-        disclaimer = disclaimer_marker + parts[1]
+        disclaimer = found_marker + parts[1]
         return f"{main_body}\n{bibliography}\n\n{disclaimer}"
     else:
         return f"{llm_response}\n{bibliography}"
