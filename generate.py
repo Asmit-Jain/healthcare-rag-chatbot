@@ -75,7 +75,15 @@ Standalone English Search Query:"""
             max_tokens=200,
             timeout=30.0
         )
-        rewritten = response.choices[0].message.content.strip().strip('"')
+        raw_rewritten = response.choices[0].message.content.strip()
+        if "Standalone English Search Query:" in raw_rewritten:
+            rewritten = raw_rewritten.split("Standalone English Search Query:")[-1].strip().strip('"')
+        elif "Translation:" in raw_rewritten:
+            rewritten = raw_rewritten.split("Translation:")[-1].strip().strip('"')
+        else:
+            lines = [line.strip() for line in raw_rewritten.split("\n") if line.strip()]
+            rewritten = lines[-1].strip('"') if lines else raw_rewritten
+
         print(f"🔄 Conversational/Multilingual Context: Rewrote query to English standalone as: '{rewritten}'")
         return rewritten
     except Exception as e:
