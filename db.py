@@ -53,7 +53,7 @@ def check_mongo_connection():
 
 # --- PHASE 2: DATABASE CRUD HELPER FUNCTIONS ---
 
-def create_chat_session(session_id, title="New Chat"):
+def create_chat_session(session_id, title="New Chat", language="English"):
     """
     Creates a new chat session document in MongoDB.
     """
@@ -62,6 +62,7 @@ def create_chat_session(session_id, title="New Chat"):
         session_doc = {
             "session_id": session_id,
             "title": title,
+            "language": language,
             "created_at": datetime.now(timezone.utc).isoformat(),
             "updated_at": datetime.now(timezone.utc).isoformat(),
             "messages": []
@@ -115,6 +116,21 @@ def update_session_title(session_id, new_title):
         print(f"[ERROR] Failed to update session title for {session_id}: {e}")
         return False
 
+def update_session_language(session_id, language):
+    """
+    Updates the target language preference of a chat session.
+    """
+    try:
+        collection = get_sessions_collection()
+        collection.update_one(
+            {"session_id": session_id},
+            {"$set": {"language": language, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        return True
+    except Exception as e:
+        print(f"[ERROR] Failed to update session language for {session_id}: {e}")
+        return False
+
 def get_all_sessions():
     """
     Retrieves all chat sessions sorted by updated_at descending (newest first).
@@ -124,7 +140,7 @@ def get_all_sessions():
         collection = get_sessions_collection()
         sessions = list(collection.find(
             {},
-            {"_id": 0, "session_id": 1, "title": 1, "created_at": 1, "updated_at": 1}
+            {"_id": 0, "session_id": 1, "title": 1, "language": 1, "created_at": 1, "updated_at": 1}
         ).sort("updated_at", -1))
         return sessions
     except Exception as e:
@@ -144,6 +160,20 @@ def get_session_messages(session_id):
     except Exception as e:
         print(f"[ERROR] Failed to fetch messages for session {session_id}: {e}")
         return []
+
+def get_session_language(session_id):
+    """
+    Retrieves the language preference for a given session_id.
+    """
+    try:
+        collection = get_sessions_collection()
+        doc = collection.find_one({"session_id": session_id}, {"_id": 0, "language": 1})
+        if doc and "language" in doc:
+            return doc.get("language", "English")
+        return "English"
+    except Exception as e:
+        print(f"[ERROR] Failed to fetch language for session {session_id}: {e}")
+        return "English"
 
 def delete_session(session_id):
     """

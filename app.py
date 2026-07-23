@@ -10,7 +10,9 @@ from db import (
     delete_session,
     create_chat_session,
     append_message_to_session,
-    update_session_title
+    update_session_title,
+    update_session_language,
+    get_session_language
 )
 
 # --- STEP 2: ACTIVE CONNECTION CHECKS ---
@@ -192,6 +194,10 @@ if "suggestion_clicked" not in st.session_state:
     st.session_state.suggestion_clicked = None
 if "active_session_id" not in st.session_state:
     st.session_state.active_session_id = None
+if "selected_language" not in st.session_state:
+    st.session_state.selected_language = "English"
+if "custom_language" not in st.session_state:
+    st.session_state.custom_language = ""
 
 # --- STEP 2: SIDEBAR IMPLEMENTATION ---
 with st.sidebar:
@@ -227,6 +233,10 @@ with st.sidebar:
                     # Load messages from MongoDB for this session
                     loaded_msgs = get_session_messages(s_id)
                     st.session_state.messages = loaded_msgs
+                    
+                    # Load language preference for this session
+                    sess_lang = get_session_language(s_id)
+                    st.session_state.selected_language = sess_lang
                     
                     # Reconstruct chat_history for LLM contextualizer
                     reconstructed_history = []
@@ -292,6 +302,57 @@ with st.sidebar:
         step=0.05,
         help="Low values ensure grounding and eliminate hallucinations."
     )
+    
+    st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
+    
+    # 3. Multi-Language Selector Dropdown
+    st.markdown("**🌐 Language Settings**")
+    language_options = [
+        "English",
+        "Hindi (हिंदी)",
+        "Hinglish (Hindi in Roman script)",
+        "Bengali (বাংলা)",
+        "Tamil (தமிழ்)",
+        "Telugu (తెలుగు)",
+        "Marathi (मराठी)",
+        "Gujarati (ગુજરાતી)",
+        "Spanish (Español)",
+        "French (Français)",
+        "German (Deutsch)",
+        "Custom / Other"
+    ]
+    
+    current_lang = st.session_state.selected_language
+    if current_lang in language_options:
+        default_lang_idx = language_options.index(current_lang)
+    else:
+        default_lang_idx = language_options.index("Custom / Other")
+        if not st.session_state.custom_language and current_lang:
+            st.session_state.custom_language = current_lang
+
+    chosen_lang_option = st.selectbox(
+        "Response Language",
+        language_options,
+        index=default_lang_idx,
+        help="Select the target language for AI responses."
+    )
+
+    if chosen_lang_option == "Custom / Other":
+        custom_val = st.text_input(
+            "Specify Language",
+            value=st.session_state.custom_language,
+            placeholder="e.g. Punjabi, Japanese, Russian..."
+        )
+        st.session_state.custom_language = custom_val
+        active_target_language = custom_val.strip() if custom_val.strip() else "English"
+    else:
+        active_target_language = chosen_lang_option
+
+    # Sync selection to session state and database
+    if st.session_state.selected_language != active_target_language:
+        st.session_state.selected_language = active_target_language
+        if st.session_state.active_session_id and mongo_active:
+            update_session_language(st.session_state.active_session_id, active_target_language)
     
     st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
     
@@ -416,7 +477,7 @@ if user_query:
     if st.session_state.active_session_id is None and mongo_active:
         new_sess_id = f"session-{uuid.uuid4()}"
         auto_title = user_query[:28] + "..." if len(user_query) > 28 else user_query
-        create_chat_session(new_sess_id, title=auto_title)
+        create_chat_session(new_sess_id, title=auto_title, language=st.session_state.selected_language)
         st.session_state.active_session_id = new_sess_id
 
     # 1. Render and append user's query
