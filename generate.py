@@ -37,47 +37,54 @@ Follow these strict rules at all times:
    "Disclaimer: This information is for educational purposes only. Please consult a qualified medical professional for specific clinical advice and treatment."
 """
 
-def rewrite_query_with_history(user_query, chat_history):
+def rewrite_query_with_history(user_query, chat_history, language="English"):
     """
-    Uses Llama 3.1 70B to rewrite a follow-up query into a standalone search query if history exists.
-    This resolves pronouns like 'it', 'this scheme', or 'its symptoms' so RAG search is accurate.
+    Uses Llama 3.1 70B to rewrite a follow-up query into a standalone search query if history exists,
+    or translates non-English/Hinglish queries into English for accurate ChromaDB & BM25 retrieval.
     """
-    if not chat_history:
+    if not chat_history and (not language or language == "English"):
         return user_query
 
     # Assemble conversation history snippet for prompt
     history_str = ""
-    for msg in chat_history[-10:]:  # Limit to last 10 messages (5 turns) for context
-        role = "User" if msg["role"] == "user" else "Assistant"
-        # Strip references list from history content to keep it clean
-        clean_content = msg["content"].split("References:\n")[0].strip()
-        history_str += f"{role}: {clean_content}\n"
+    if chat_history:
+        for msg in chat_history[-10:]:  # Limit to last 10 messages (5 turns) for context
+            role = "User" if msg["role"] == "user" else "Assistant"
+            # Strip references list from history content to keep it clean
+            clean_content = msg["content"].split("References:\n")[0].strip()
+            history_str += f"{role}: {clean_content}\n"
 
-    prompt = f"""Given the following conversation history and a follow-up question, rewrite the follow-up question to be a standalone, search-friendly query that contains all necessary context (like specific disease names or scheme names). Do not answer the question, just return the rewritten question.
+    prompt = f"""You are a query translation and contextualization assistant.
+Given the following conversation history and a user's question (which may be in any language like Hindi, Hinglish, Spanish, etc.), perform two tasks:
+1. Resolve any relative pronouns or references (like 'it', 'this scheme', 'its symptoms') using the conversation history.
+2. Translate the question into a clear, standalone, search-friendly query in ENGLISH so it can search an English document vector database.
+
+Do not answer the question. Only return the standalone English search query string.
 
 Conversation History:
-{history_str}
-Follow-up Question: {user_query}
-Standalone Query:"""
+{history_str if history_str else "None"}
+
+User Question: {user_query}
+Standalone English Search Query:"""
 
     try:
         response = client.chat.completions.create(
             model=MODEL_NAME,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.0,
-            max_tokens=100,
+            max_tokens=200,
             timeout=30.0
         )
         rewritten = response.choices[0].message.content.strip().strip('"')
-        print(f"🔄 Conversational Context: Rewrote query to stand alone as: '{rewritten}'")
+        print(f"🔄 Conversational/Multilingual Context: Rewrote query to English standalone as: '{rewritten}'")
         return rewritten
     except Exception as e:
-        print(f"[WARNING] Query rewriting failed: {e}. Falling back to original query.")
+        print(f"[WARNING] Query rewriting/translation failed: {e}. Falling back to original query.")
         return user_query
 
-def generate_response(user_query, context_chunks, chat_history=None, temperature=0.1):
+def generate_response(user_query, context_chunks, chat_history=None, temperature=0.1, language="English"):
     """
-    Assembles the context prompt, appends chat history, calls the Qwen model, and returns response.
+    Assembles the context prompt, appends chat history, calls the Llama model with target language instructions, and returns response.
     """
     if chat_history is None:
         chat_history = []
@@ -92,8 +99,13 @@ def generate_response(user_query, context_chunks, chat_history=None, temperature
         formatted_context += f"Content: {chunk.get('text', '')}\n"
     formatted_context += "---\n"
 
+    # Dynamic System Prompt with Language Constraint
+    sys_prompt = SYSTEM_PROMPT
+    if language and language != "English":
+        sys_prompt += f"\n5. STRICT LANGUAGE REQUIREMENT: You MUST synthesize and write your entire final response strictly in {language}. Retain inline citation brackets like [1], [2] intact, and ensure any medical disclaimer is written accurately in {language}."
+
     # Compile messages payload starting with system instructions
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    messages = [{"role": "system", "content": sys_prompt}]
 
     # Append chat history (limit to last 10 messages / 5 turns)
     for msg in chat_history[-10:]:
@@ -188,14 +200,9 @@ def format_response_with_citations(llm_response, context_chunks):
         return f"{llm_response}\n{bibliography}"
 
 # --- STEP 5: CONNECT RETRIEVAL TO GENERATION ---
-def query_rag_chatbot(user_query, chat_history=None, n_results=5, temperature=0.1):
+def query_rag_chatbot(user_query, chat_history=None, n_results=5, temperature=0.1, language="English"):
     """
-    End-to-end RAG Chatbot entrypoint.
-    1. Rewrites query if chat history exists to resolve relative pronouns.
-    2. Calls retrieve_for_generation to get matching document chunks or trigger local guardrails.
-    3. Checks the status:
-       - If unsafe query or out-of-bounds, directly returns the local safety block response.
-       - If successful, feeds the retrieved chunks and history into generate_response.
+    End-to-end RAG Chatbot entrypoint with Multi-Language Support.
     """
     if chat_history is None:
         chat_history = []
@@ -212,8 +219,9 @@ def query_rag_chatbot(user_query, chat_history=None, n_results=5, temperature=0.
             "distance": 1.0
         }
 
-    # B. Proper Noun check (verifies user is asking about supported schemes)
-    if not passes_proper_noun_check(user_query):
+    # B. Proper Noun check (verifies user is asking about supported schemes if query is English)
+    # Skip proper noun check for non-English queries as they will be translated to English during rewriting
+    if (not language or language == "English") and not passes_proper_noun_check(user_query):
         print("🛑 Local Guardrail Triggered: Out-of-Bounds Query (Proper Noun Check)")
         return {
             "answer": "I am sorry, but I do not have enough information in my database to answer your query.",
@@ -221,12 +229,12 @@ def query_rag_chatbot(user_query, chat_history=None, n_results=5, temperature=0.
             "distance": 1.0
         }
 
-    print(f"\n[USER QUERY] '{user_query}'")
+    print(f"\n[USER QUERY ({language})] '{user_query}'")
 
-    # 2. Rewrite the query if chat history exists to maintain search accuracy
-    search_query = rewrite_query_with_history(user_query, chat_history)
+    # 2. Rewrite/Translate the query into standalone English search terms
+    search_query = rewrite_query_with_history(user_query, chat_history, language=language)
     
-    # 3. Retrieve matching chunks on the contextualized query (bypassing proper noun check for internal rewrite)
+    # 3. Retrieve matching chunks on the English query (bypassing proper noun check for internal rewrite)
     retrieval_result = retrieve_for_generation(search_query, n_results=n_results, run_proper_noun_check=False)
     
     # 4. Handle remaining guardrail rejections (semantic distance check)
@@ -238,9 +246,9 @@ def query_rag_chatbot(user_query, chat_history=None, n_results=5, temperature=0.
             "distance": retrieval_result["distance"]
         }
         
-    # 5. If retrieval succeeded, feed chunks into Llama 3.1 70B for synthesis
-    print(f"✅ Retrieval Succeeded (Distance: {retrieval_result['distance']:.3f}). Calling Llama 3.1 70B...")
-    raw_response = generate_response(user_query, retrieval_result["chunks"], chat_history=chat_history, temperature=temperature)
+    # 5. If retrieval succeeded, feed chunks into Llama 3.1 70B for synthesis in target language
+    print(f"✅ Retrieval Succeeded (Distance: {retrieval_result['distance']:.3f}). Calling Llama 3.1 70B ({language})...")
+    raw_response = generate_response(user_query, retrieval_result["chunks"], chat_history=chat_history, temperature=temperature, language=language)
     
     # 6. Format citations and references
     formatted_response = format_response_with_citations(raw_response, retrieval_result["chunks"])

@@ -496,7 +496,8 @@ if user_query:
                 user_query=user_query,
                 chat_history=st.session_state.chat_history,
                 n_results=n_results,
-                temperature=temperature
+                temperature=temperature,
+                language=st.session_state.selected_language
             )
             answer = result["answer"]
             st.markdown(answer)
