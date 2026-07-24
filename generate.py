@@ -33,27 +33,40 @@ Follow these strict rules at all times:
    - DO NOT diagnose conditions, prescribe medications, or recommend specific drug dosages or treatment decisions under any circumstances.
    - If the user asks for prescriptions, dosages, or diagnostic medical treatment, you must refuse to answer and advise them to consult a qualified physician.
 3. Citation Rule: When you state a fact from a retrieved chunk, you MUST cite it using inline brackets matching its chunk number (e.g., [1], [2]).
-4. Tone: Maintain a highly cautious, educational, and objective tone. Always append the following medical disclaimer at the very end of any response discussing symptoms or conditions:
-   "Disclaimer: This information is for educational purposes only. Please consult a qualified medical professional for specific clinical advice and treatment."
+4. Tone: Maintain a highly cautious, educational, and objective tone at all times.
 """
 
 def get_localized_guardrail_refusal(refusal_type, language="English"):
     """
-    Returns localized guardrail refusal messages in English, Hindi, Hinglish, or Spanish.
-    Falls back to LLM translation for custom languages.
+    Returns localized guardrail refusal messages in English, Hindi, Hinglish, Marathi, German, Spanish, French, Bengali, Tamil, Telugu, or Gujarati.
+    Falls back to fast LLM translation for custom languages like Japanese, Russian, etc.
     """
     refusals = {
         "medical_safety": {
             "English": "As an AI health awareness assistant, I cannot provide medical diagnoses, drug prescriptions, medicine dosages, or treatment decisions. Please consult a qualified medical professional for specific clinical advice and treatment.",
             "Hindi (हिंदी)": "एक स्वास्थ्य जागरूकता AI सहायक के रूप में, मैं चिकित्सा निदान, दवा के पर्चे, दवा की खुराक या उपचार के निर्णय प्रदान नहीं कर सकता। कृपया विशिष्ट नैदानिक सलाह और उपचार के लिए एक योग्य चिकित्सक से परामर्श करें।",
             "Hinglish (Hindi in Roman script)": "Mai ek health awareness AI assistant hu, isliye mai medical diagnoses, drug prescriptions, medicine dosages ya treatment decisions nahi de sakta. Kripya specific clinical advice aur treatment ke liye ek qualified doctor se consult kare.",
-            "Spanish (Español)": "Como asistente de concienciación sobre la salud por IA, no puedo proporcionar diagnósticos médicos, recetas de medicamentos, dosis ni decisiones de tratamiento. Consulte a un profesional médico cualificado para obtener asesoramiento clínico y tratamiento específicos."
+            "Marathi (मराठी)": "आरोग्य जागरूकता AI सहाय्यक म्हणून, मी वैद्यकीय निदान, औषधांची प्रिस्क्रिप्शन, औषधांचे डोस किंवा उपचारांचे निर्णय देऊ शकत नाही. कृपया विशिष्ट क्लिनिकल सल्ला आणि उपचारांसाठी पात्र वैद्यकीय व्यावसायिकांचा सल्ला घ्या.",
+            "German (Deutsch)": "Als KI-Assistent für Gesundheitsbewusstsein kann ich keine medizinischen Diagnosen, Verschreibungen, Dosierungen oder Behandlungsentscheidungen anbieten. Bitte konsultieren Sie einen qualifizierten Arzt.",
+            "Spanish (Español)": "Como asistente de concienciación sobre la salud por IA, no puedo proporcionar diagnósticos médicos, recetas de medicamentos, dosis ni decisiones de tratamiento. Consulte a un profesional médico cualificado.",
+            "French (Français)": "En tant qu'assistant de sensibilisation à la santé par IA, je ne peux pas fournir de diagnostics médicaux, de prescriptions, de dosages ou de décisions de traitement. Veuillez consulter un médecin qualifié.",
+            "Bengali (বাংলা)": "একটি স্বাস্থ্য সচেতণতা AI সহকারী হিসেবে, আমি চিকিৎসা সংক্রান্ত রোগ নির্ণয়, ওষুধের প্রেসক্রিপশন, ওষুধের মাত্রা বা চিকিৎসার সিদ্ধান্ত দিতে পারি না। অনুগ্রহ করে একজন যোগ্যতাসম্পন্ন চিকিৎসকের সাথে পরামর্শ করুন।",
+            "Tamil (தமிழ்)": "சுகாதார விழிப்புணர்வு AI உதவியாளராக, என்னால் மருத்துவ பரிசோதனை, மருந்துக் குறிப்பு அல்லது சிகிச்சை முடிவுகளை வழங்க முடியாது. தகுதியான மருத்துவரை அணுகவும்.",
+            "Telugu (తెలుగు)": "ఆరోగ్య అవగాహన AI సహాయకుడిగా, నేను వైద్య నిర్ధారణలు, ఔషధ ప్రిస్క్రిప్షన్లు లేదా చికిత్స నిర్ణయాలను అందించలేను. దయచేసి అర్హత కలిగిన వైద్యుడిని సంప్రదించండి.",
+            "Gujarati (ગુજરાતી)": "આરોગ્ય જાગરૂકતા AI સહાયક તરીકે, હું તબીબી નિદાન, દવાની પ્રિસ્ક્રિપ્શનો કે સારવારના નિર્ણયો આપી શકતો નથી. કૃપા કરીને લાયક તબીબી વ્યાવસાયિકની સલાહ લો."
         },
         "out_of_bounds": {
             "English": "I am sorry, but I do not have enough information in my verified database to answer your query.",
             "Hindi (हिंदी)": "मुझे खेद है, लेकिन मेरे सत्यापित डेटाबेस में आपके प्रश्न का उत्तर देने के लिए पर्याप्त जानकारी उपलब्ध नहीं है।",
             "Hinglish (Hindi in Roman script)": "Mujhe khed hai, lekin mere verified database me aapke question ka answer dene ke liye sufficient information nahi hai.",
-            "Spanish (Español)": "Lo siento, pero no tengo suficiente información en mi base de datos verificada para responder a su consulta."
+            "Marathi (मराठी)": "मला वाईट वाटते, पण माझ्या पडताळलेल्या डेटाबेसमध्ये तुमच्या प्रश्नाचे उत्तर देण्यासाठी पुरेशी माहिती नाही.",
+            "German (Deutsch)": "Es tut mir leid, aber in meiner verifizierten Datenbank sind nicht genügend Informationen vorhanden, um Ihre Anfrage zu beantworten.",
+            "Spanish (Español)": "Lo siento, pero no tengo suficiente información en mi base de datos verificada para responder a su consulta.",
+            "French (Français)": "Je suis désolé, mais je ne dispose pas de suffisamment d'informations dans ma base de données vérifiée pour répondre à votre demande.",
+            "Bengali (বাংলা)": "আমি দুঃখিত, কিন্তু আমার নিবন্ধিত ডেটাবেসে আপনার প্রশ্নের উত্তর দেওয়ার জন্য পর্যাপ্ত তথ্য নেই।",
+            "Tamil (தமிழ்)": "மன்னிக்கவும், உங்கள் கேள்விக்கு பதிலளிக்க எனது சரிபார்க்கப்பட்ட தரவுத்தளத்தில் போதுமான தகவல் இல்லை.",
+            "Telugu (తెలుగు)": "క్షమించండి, మీ ప్రశ్నకు సమాధానం ఇవ్వడానికి నా నిరూపిత డేటాబేస్‌లో తగినంత సమాచారం లేదు.",
+            "Gujarati (ગુજરાતી)": "મને ખેદ છે, પરંતુ મારા ચકાસાયેલ ડેટાબેઝમાં તમારા પ્રશ્નનો જવાબ આપવા માટે પૂરતી માહિતી નથી."
         }
     }
 

@@ -63,6 +63,7 @@ def create_chat_session(session_id, title="New Chat", language="English"):
             "session_id": session_id,
             "title": title,
             "language": language,
+            "is_pinned": False,
             "created_at": datetime.now(timezone.utc).isoformat(),
             "updated_at": datetime.now(timezone.utc).isoformat(),
             "messages": []
@@ -116,6 +117,23 @@ def update_session_title(session_id, new_title):
         print(f"[ERROR] Failed to update session title for {session_id}: {e}")
         return False
 
+def toggle_pin_session(session_id):
+    """
+    Toggles the is_pinned status of a chat session.
+    """
+    try:
+        collection = get_sessions_collection()
+        doc = collection.find_one({"session_id": session_id}, {"_id": 0, "is_pinned": 1})
+        current_pinned = doc.get("is_pinned", False) if doc else False
+        collection.update_one(
+            {"session_id": session_id},
+            {"$set": {"is_pinned": not current_pinned, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        return not current_pinned
+    except Exception as e:
+        print(f"[ERROR] Failed to toggle pin for session {session_id}: {e}")
+        return False
+
 def update_session_language(session_id, language):
     """
     Updates the target language preference of a chat session.
@@ -140,7 +158,7 @@ def get_all_sessions():
         collection = get_sessions_collection()
         sessions = list(collection.find(
             {},
-            {"_id": 0, "session_id": 1, "title": 1, "language": 1, "created_at": 1, "updated_at": 1}
+            {"_id": 0, "session_id": 1, "title": 1, "language": 1, "is_pinned": 1, "created_at": 1, "updated_at": 1}
         ).sort("updated_at", -1))
         return sessions
     except Exception as e:

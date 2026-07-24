@@ -1,4 +1,5 @@
 import os
+import re
 import uuid
 import streamlit as st
 from retrieve import chroma_client
@@ -11,6 +12,7 @@ from db import (
     create_chat_session,
     append_message_to_session,
     update_session_title,
+    toggle_pin_session,
     update_session_language,
     get_session_language
 )
@@ -165,6 +167,26 @@ custom_css = """
         background-color: #10b981;
         color: #0b0f19;
     }
+
+    /* 3-Dots Popover Styling Adjustments */
+    div[data-testid="stPopover"] button svg {
+        display: none !important;
+    }
+    div[data-testid="stPopover"] button {
+        padding-left: 2px !important;
+        padding-right: 2px !important;
+    }
+    div[data-testid="stPopoverBody"] {
+        padding: 10px 14px !important;
+        border-radius: 10px !important;
+        background-color: #111827 !important;
+        border: 1px solid #374151 !important;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+    }
+    div[data-testid="stPopoverBody"] button {
+        margin-top: 2px !important;
+        margin-bottom: 2px !important;
+    }
 </style>
 """
 st.markdown(custom_css, unsafe_allow_html=True)
@@ -212,40 +234,69 @@ with st.sidebar:
         st.session_state.suggestion_clicked = None
         st.rerun()
 
-    # 2. Render past chat sessions from MongoDB Atlas
+    # 2. Render past chat sessions from MongoDB Atlas with ChatGPT 3-Dots Menu
     if mongo_active:
         past_sessions = get_all_sessions()
         if past_sessions:
-            st.markdown("<div style='margin-top: 8px;'></div>", unsafe_allow_html=True)
-            for sess in past_sessions:
+            pinned_sessions = [s for s in past_sessions if s.get("is_pinned", False)]
+            recent_sessions = [s for s in past_sessions if not s.get("is_pinned", False)]
+            
+            def render_session_item(sess):
                 s_id = sess["session_id"]
                 s_title = sess.get("title", "Untitled Chat")
-                
-                # Truncate title if too long for sidebar
-                display_title = s_title[:26] + "..." if len(s_title) > 26 else s_title
-                
-                # Highlight active session
+                is_pinned = sess.get("is_pinned", False)
                 is_active = (s_id == st.session_state.active_session_id)
-                button_label = f"📌 {display_title}" if is_active else f"💬 {display_title}"
                 
-                if st.button(button_label, key=f"sess_btn_{s_id}", use_container_width=True):
-                    st.session_state.active_session_id = s_id
-                    # Load messages from MongoDB for this session
-                    loaded_msgs = get_session_messages(s_id)
-                    st.session_state.messages = loaded_msgs
+                display_title = s_title[:20] + "..." if len(s_title) > 20 else s_title
+                btn_icon = "📌" if is_pinned else "💬"
+                btn_label = f"{btn_icon} {display_title}"
+                
+                c_main, c_opts = st.columns([0.80, 0.20])
+                with c_main:
+                    if st.button(btn_label, key=f"sess_btn_{s_id}", use_container_width=True):
+                        st.session_state.active_session_id = s_id
+                        loaded_msgs = get_session_messages(s_id)
+                        st.session_state.messages = loaded_msgs
+                        sess_lang = get_session_language(s_id)
+                        st.session_state.selected_language = sess_lang
+                        reconstructed_history = []
+                        for m in loaded_msgs:
+                            clean_text = m["content"].split("\n\nReferences:")[0].strip()
+                            reconstructed_history.append({"role": m["role"], "content": clean_text})
+                        st.session_state.chat_history = reconstructed_history
+                        st.session_state.suggestion_clicked = None
+                        st.rerun()
+                with c_opts:
+                    with st.popover("⋮", use_container_width=True):
+                        st.markdown("<div style='font-weight: 600; font-size: 0.9rem; margin-bottom: 6px;'>Chat Options</div>", unsafe_allow_html=True)
+                        pin_label = "📌 Unpin Chat" if is_pinned else "📌 Pin Chat"
+                        if st.button(pin_label, key=f"pin_{s_id}", use_container_width=True):
+                            toggle_pin_session(s_id)
+                            st.rerun()
+                            
+                        new_name = st.text_input("✏️ Rename (Press Enter)", value=s_title, key=f"rename_in_{s_id}")
+                        if new_name.strip() and new_name.strip() != s_title:
+                            update_session_title(s_id, new_name.strip())
+                            st.rerun()
+                                
+                        if st.button("🗑️ Delete Chat", key=f"del_{s_id}", use_container_width=True):
+                            delete_session(s_id)
+                            if st.session_state.active_session_id == s_id:
+                                st.session_state.active_session_id = None
+                                st.session_state.messages = []
+                                st.session_state.chat_history = []
+                                st.session_state.suggestion_clicked = None
+                            st.rerun()
+
+            if pinned_sessions:
+                st.markdown("<div style='font-size: 0.85rem; font-weight: 600; color: #9ca3af; margin-top: 12px; margin-bottom: 4px;'>📌 PINNED CHATS</div>", unsafe_allow_html=True)
+                for sess in pinned_sessions:
+                    render_session_item(sess)
                     
-                    # Load language preference for this session
-                    sess_lang = get_session_language(s_id)
-                    st.session_state.selected_language = sess_lang
-                    
-                    # Reconstruct chat_history for LLM contextualizer
-                    reconstructed_history = []
-                    for m in loaded_msgs:
-                        clean_text = m["content"].split("\n\nReferences:")[0].strip()
-                        reconstructed_history.append({"role": m["role"], "content": clean_text})
-                    st.session_state.chat_history = reconstructed_history
-                    st.session_state.suggestion_clicked = None
-                    st.rerun()
+            if recent_sessions:
+                st.markdown("<div style='font-size: 0.85rem; font-weight: 600; color: #9ca3af; margin-top: 12px; margin-bottom: 4px;'>💬 RECENT CHATS</div>", unsafe_allow_html=True)
+                for sess in recent_sessions:
+                    render_session_item(sess)
         else:
             st.caption("No saved chats found.")
     else:
@@ -302,38 +353,67 @@ with st.sidebar:
         step=0.05,
         help="Low values ensure grounding and eliminate hallucinations."
     )
-    
-    st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
-    
-    st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
-    
-    # 3. Clean Clear Conversation Button
-    if st.button("🗑️ Clear Active Conversation", use_container_width=True):
-        if st.session_state.active_session_id and mongo_active:
-            delete_session(st.session_state.active_session_id)
-        st.session_state.active_session_id = None
-        st.session_state.messages = []
-        st.session_state.chat_history = []
-        st.session_state.suggestion_clicked = None
-        st.success("Conversation cleared successfully!")
-        st.rerun()
 
 def get_disclaimer_for_language(lang):
-    if "Hindi" in lang or "हिंदी" in lang:
-        return "डिस्क्लेमर: यह जानकारी केवल शैक्षिक उद्देश्यों के लिए है। कृपया विशिष्ट नैदानिक सलाह और उपचार के लिए एक योग्य चिकित्सक से परामर्श करें।"
-    elif "Hinglish" in lang:
-        return "Disclaimer: Ye jankari educational purposes ke liye hai. Specific clinical advice aur treatment ke liye ek qualified doctor se consult kare."
-    elif "Spanish" in lang or "Español" in lang:
-        return "Descargo de responsabilidad: Esta información es solo para fines educativos. Consulte a un profesional médico cualificado para obtener asesoramiento clínico y tratamiento específicos."
-    elif "French" in lang or "Français" in lang:
-        return "Avertissement: Ces informations sont fournies à des fins éducatives uniquement. Veuillez consulter un professionnel de la santé qualifié."
-    else:
-        return "Disclaimer: This information is for educational purposes only. Please consult a qualified medical professional for specific clinical advice and treatment."
+    """
+    Hybrid Smart Disclaimer System:
+    1. Instant lookup for top languages (0.00s latency).
+    2. Dynamic LLM translation fallback for custom languages with caching.
+    """
+    disclaimers_map = {
+        "English": "Disclaimer: This information is for educational purposes only. Please consult a qualified medical professional for specific clinical advice and treatment.",
+        "Hindi (हिंदी)": "डिस्क्लेमर: यह जानकारी केवल शैक्षिक उद्देश्यों के लिए है। कृपया विशिष्ट नैदानिक सलाह और उपचार के लिए एक योग्य चिकित्सक से परामर्श करें।",
+        "Hinglish (Hindi in Roman script)": "Disclaimer: Ye jankari educational purposes ke liye hai. Specific clinical advice aur treatment ke liye ek qualified doctor se consult kare.",
+        "Marathi (मराठी)": "अस्वीकरण: ही माहिती केवळ शैक्षणिक हेतूसाठी आहे. कृपया विशिष्ट वैद्यकीय सल्ल्यासाठी आणि उपचारांसाठी पात्र डॉक्टरांचा सल्ला घ्या.",
+        "German (Deutsch)": "Haftungsausschluss: Diese Informationen dienen nur zu Bildungszwecken. Bitte konsultieren Sie einen qualifizierten medizinischen Fachmann für spezifische klinische Beratung und Behandlung.",
+        "Spanish (Español)": "Descargo de responsabilidad: Esta información es solo para fines educativos. Consulte a un profesional médico cualificado para obtener asesoramiento clínico y tratamiento específicos.",
+        "French (Français)": "Avertissement: Ces informations sont fournies à des fins éducatives uniquement. Veuillez consulter un professionnel de la santé qualifié.",
+        "Bengali (বাংলা)": "দাবি পরিত্যাগ: এই তথ্য শুধুমাত্র শিক্ষামূলক উদ্দেশ্যে। নির্দিষ্ট চিকিৎসার পরামর্শ ও চিকিৎসার জন্য দয়া করে একজন যোগ্যতাসম্পন্ন চিকিৎসকের সাথে পরামর্শ করুন.",
+        "Tamil (தமிழ்)": "மறுப்பு: இந்த தகவல் கல்வி நோக்கங்களுக்காக மட்டுமே. குறிப்பிட்ட மருத்துவ ஆலோசனை மற்றும் சிகிச்சைக்கு தகுதியுள்ள மருத்துவரை அணுகவும்.",
+        "Telugu (తెలుగు)": "గమనిక: ఈ సమాచారం కేవలం విద్యా ప్రయోజనాల కోసం మాత్రమే. నిర్దిష్ట వైద్య సలహా మరియు చికిత్స కోసం దయచేసి అర్హత కలిగిన వైద్యుడిని సంప్రదించండి.",
+        "Gujarati (ગુજરાતી)": "અસ્વીકરણ: આ માહિતી ફક્ત શૈક્ષણિક હેતુઓ માટે છે. ચોક્કસ તબીબી સલાહ અને સારવાર માટે કૃપા કરીને લાયક તબીબી વ્યાવસાયિકની સલાહ લો."
+    }
+
+    if lang in disclaimers_map:
+        return disclaimers_map[lang]
+
+    for key, text in disclaimers_map.items():
+        if key.split(" ")[0].lower() in lang.lower():
+            return text
+
+    if "custom_disclaimer_cache" not in st.session_state:
+        st.session_state.custom_disclaimer_cache = {}
+
+    if lang in st.session_state.custom_disclaimer_cache:
+        return st.session_state.custom_disclaimer_cache[lang]
+
+    try:
+        from generate import client, MODEL_NAME
+        english_disclaimer = disclaimers_map["English"]
+        response = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[{
+                "role": "user",
+                "content": f"Translate the following medical disclaimer statement into {lang}. Return ONLY the translated disclaimer statement without quotes or extra preamble text:\n\n{english_disclaimer}"
+            }],
+            temperature=0.0,
+            max_tokens=100,
+            timeout=10.0
+        )
+        translated = response.choices[0].message.content.strip().strip('"')
+        st.session_state.custom_disclaimer_cache[lang] = translated
+        return translated
+    except Exception as e:
+        print(f"[WARNING] Dynamic disclaimer translation failed: {e}. Falling back to English.")
+        return disclaimers_map["English"]
 
 # --- STEP 4 & 5: DISPLAY CONVERSATION BUBBLES ---
 for msg_idx, message in enumerate(st.session_state.messages):
+    display_content = message.get("content", "")
+    if not display_content or not str(display_content).strip():
+        continue  # Skip empty messages to prevent blank icon bubbles
+
     with st.chat_message(message["role"]):
-        display_content = message["content"]
         if message["role"] == "assistant":
             # Strip plain-text references section from display content
             if "\n\nReferences:" in display_content:
@@ -341,10 +421,9 @@ for msg_idx, message in enumerate(st.session_state.messages):
             if "References:\n" in display_content:
                 display_content = display_content.split("References:\n")[0].strip()
             
-            # Strip embedded disclaimers if present to avoid duplication
-            display_content = re.sub(r'Disclaimer:.*$', '', display_content, flags=re.DOTALL).strip()
-            display_content = re.sub(r'अस्वीकरण:.*$', '', display_content, flags=re.DOTALL).strip()
-            display_content = re.sub(r'Descargo de responsabilidad:.*$', '', display_content, flags=re.DOTALL).strip()
+            # Universal Disclaimer Stripper: remove any embedded LLM disclaimers across all languages
+            disclaimer_pattern = r'(\*?\b(Disclaimer|Haftungsausschluss|Descargo de responsabilidad|Avertissement|अस्वीकरण|डिस्क्लोमर|डिस्क्लेमर|দাবি পরিত্যাগ|மறுப்பு|గమనిక|અસ્વીકરણ)\b:?.*$)'
+            display_content = re.sub(disclaimer_pattern, '', display_content, flags=re.IGNORECASE | re.DOTALL).strip()
 
             # Programmatically append clean localized disclaimer at bottom
             disclaimer_text = get_disclaimer_for_language(st.session_state.selected_language)
@@ -437,12 +516,11 @@ if len(st.session_state.messages) == 0:
             st.rerun()
 
 # --- STEP 4: CONVERSATIONAL CHAT INPUT & RUN PIPELINE ---
-st.markdown('<div style="margin-top: 15px;"></div>', unsafe_allow_html=True)
+st.markdown('<div style="margin-top: 10px;"></div>', unsafe_allow_html=True)
 
-# Main Area Language Selector Bar
-col_in1, col_in2 = st.columns([3, 1])
-
-with col_in2:
+# Single Clean Language Selector Dropdown in Main Area
+col_lang1, col_lang2 = st.columns([2.5, 1.5])
+with col_lang2:
     language_options = [
         "English",
         "Hindi (हिंदी)",
@@ -469,12 +547,12 @@ with col_in2:
         "🌐 Response Language",
         language_options,
         index=default_lang_idx,
-        help="Select the target language for AI responses."
+        help="Select target language for AI responses."
     )
 
     if chosen_lang_option == "Custom / Other":
         custom_val = st.text_input(
-            "Specify Language",
+            "Specify Custom Language",
             value=st.session_state.custom_language,
             placeholder="e.g. Punjabi, Japanese..."
         )
@@ -488,8 +566,7 @@ with col_in2:
         if st.session_state.active_session_id and mongo_active:
             update_session_language(st.session_state.active_session_id, active_target_language)
 
-with col_in1:
-    user_query = st.chat_input("Ask MedLink...")
+user_query = st.chat_input("Ask MedLink...")
 
 # If suggestion was clicked, intercept and overwrite the input
 if st.session_state.suggestion_clicked:
@@ -530,7 +607,21 @@ if user_query:
             )
             exec_time = time.time() - start_time
             answer = result["answer"]
-            st.markdown(answer)
+            
+            # Clean plain-text references and disclaimers before displaying
+            clean_answer = answer
+            if "\n\nReferences:" in clean_answer:
+                clean_answer = clean_answer.split("\n\nReferences:")[0].strip()
+            if "References:\n" in clean_answer:
+                clean_answer = clean_answer.split("References:\n")[0].strip()
+            
+            disclaimer_pattern = r'(\*?\b(Disclaimer|Haftungsausschluss|Descargo de responsabilidad|Avertissement|अस्वीकरण|डिस्क्लोमर|डिस्क्लेमर|দাবি পরিত্যাগ|மறுப்பு|గమనిక|અસ્વીકરણ)\b:?.*$)'
+            clean_answer = re.sub(disclaimer_pattern, '', clean_answer, flags=re.IGNORECASE | re.DOTALL).strip()
+            
+            disclaimer_text = get_disclaimer_for_language(target_lang_turn)
+            clean_answer += f"\n\n*{disclaimer_text}*"
+
+            st.markdown(clean_answer)
             st.caption(f"⚡ Response Time: `{exec_time:.2f}s`")
             
     # 3. Append assistant response and metadata to session state
