@@ -37,21 +37,76 @@ Follow these strict rules at all times:
    "Disclaimer: This information is for educational purposes only. Please consult a qualified medical professional for specific clinical advice and treatment."
 """
 
+def get_localized_guardrail_refusal(refusal_type, language="English"):
+    """
+    Returns localized guardrail refusal messages in English, Hindi, Hinglish, or Spanish.
+    Falls back to LLM translation for custom languages.
+    """
+    refusals = {
+        "medical_safety": {
+            "English": "As an AI health awareness assistant, I cannot provide medical diagnoses, drug prescriptions, medicine dosages, or treatment decisions. Please consult a qualified medical professional for specific clinical advice and treatment.",
+            "Hindi (हिंदी)": "एक स्वास्थ्य जागरूकता AI सहायक के रूप में, मैं चिकित्सा निदान, दवा के पर्चे, दवा की खुराक या उपचार के निर्णय प्रदान नहीं कर सकता। कृपया विशिष्ट नैदानिक सलाह और उपचार के लिए एक योग्य चिकित्सक से परामर्श करें।",
+            "Hinglish (Hindi in Roman script)": "Mai ek health awareness AI assistant hu, isliye mai medical diagnoses, drug prescriptions, medicine dosages ya treatment decisions nahi de sakta. Kripya specific clinical advice aur treatment ke liye ek qualified doctor se consult kare.",
+            "Spanish (Español)": "Como asistente de concienciación sobre la salud por IA, no puedo proporcionar diagnósticos médicos, recetas de medicamentos, dosis ni decisiones de tratamiento. Consulte a un profesional médico cualificado para obtener asesoramiento clínico y tratamiento específicos."
+        },
+        "out_of_bounds": {
+            "English": "I am sorry, but I do not have enough information in my verified database to answer your query.",
+            "Hindi (हिंदी)": "मुझे खेद है, लेकिन मेरे सत्यापित डेटाबेस में आपके प्रश्न का उत्तर देने के लिए पर्याप्त जानकारी उपलब्ध नहीं है।",
+            "Hinglish (Hindi in Roman script)": "Mujhe khed hai, lekin mere verified database me aapke question ka answer dene ke liye sufficient information nahi hai.",
+            "Spanish (Español)": "Lo siento, pero no tengo suficiente información en mi base de datos verificada para responder a su consulta."
+        }
+    }
+
+    type_dict = refusals.get(refusal_type, refusals["out_of_bounds"])
+    if language in type_dict:
+        return type_dict[language]
+    
+    # Check simple key matches (e.g. "Hindi" or "Spanish")
+    for lang_key, text in type_dict.items():
+        if lang_key.lower() in language.lower():
+            return text
+            
+    # For custom / unhandled languages, perform a fast translation call
+    english_text = type_dict["English"]
+    try:
+        response = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[{
+                "role": "user",
+                "content": f"Translate the following medical refusal statement into {language}. Return ONLY the translated statement without quotes or extra text:\n\n{english_text}"
+            }],
+            temperature=0.0,
+            max_tokens=150,
+            timeout=15.0
+        )
+        return response.choices[0].message.content.strip().strip('"')
+    except Exception as e:
+        print(f"[WARNING] Localized refusal translation failed: {e}. Falling back to English.")
+        return english_text
+
 def rewrite_query_with_history(user_query, chat_history, language="English"):
     """
     Uses Llama 3.1 70B to rewrite a follow-up query into a standalone search query if history exists,
     or translates non-English/Hinglish queries into English for accurate ChromaDB & BM25 retrieval.
+    Sanitizes history by removing references, disclaimers, and bracket numbers.
     """
     if not chat_history and (not language or language == "English"):
         return user_query
 
-    # Assemble conversation history snippet for prompt
+    # Assemble sanitized conversation history snippet for prompt
     history_str = ""
     if chat_history:
-        for msg in chat_history[-10:]:  # Limit to last 10 messages (5 turns) for context
+        for msg in chat_history[-10:]:  # Limit to last 10 messages (5 turns)
             role = "User" if msg["role"] == "user" else "Assistant"
-            # Strip references list from history content to keep it clean
-            clean_content = msg["content"].split("References:\n")[0].strip()
+            content = msg["content"]
+            
+            # Sanitize content: strip references, disclaimers, and bracket citations [1], [2]
+            clean_content = content.split("References:\n")[0].split("\n\nReferences:")[0]
+            clean_content = re.sub(r'Disclaimer:.*$', '', clean_content, flags=re.DOTALL)
+            clean_content = re.sub(r'अस्वीकरण:.*$', '', clean_content, flags=re.DOTALL)
+            clean_content = re.sub(r'\[\d+\]', '', clean_content)
+            clean_content = clean_content.strip()
+            
             history_str += f"{role}: {clean_content}\n"
 
     prompt = f"""You are a query translation and contextualization assistant.
@@ -92,7 +147,7 @@ Standalone English Search Query:"""
 
 def generate_response(user_query, context_chunks, chat_history=None, temperature=0.1, language="English"):
     """
-    Assembles the context prompt, appends chat history, calls the Llama model with target language instructions, and returns response.
+    Assembles context prompt, appends sanitized chat history, calls Llama model, and returns response.
     """
     if chat_history is None:
         chat_history = []
@@ -110,16 +165,23 @@ def generate_response(user_query, context_chunks, chat_history=None, temperature
     # Dynamic System Prompt with Language Constraint
     sys_prompt = SYSTEM_PROMPT
     if language and language != "English":
-        sys_prompt += f"\n5. STRICT LANGUAGE REQUIREMENT: You MUST synthesize and write your entire final response strictly in {language}. Retain inline citation brackets like [1], [2] intact, and ensure any medical disclaimer is written accurately in {language}."
+        sys_prompt += f"\n5. STRICT LANGUAGE REQUIREMENT: You MUST synthesize and write your entire final response strictly in {language}. Retain inline citation brackets like [1], [2] intact."
 
     # Compile messages payload starting with system instructions
     messages = [{"role": "system", "content": sys_prompt}]
 
-    # Append chat history (limit to last 10 messages / 5 turns)
+    # Append sanitized chat history (limit to last 10 messages / 5 turns)
     for msg in chat_history[-10:]:
+        content = msg["content"]
+        if msg["role"] == "assistant":
+            # Strip references, disclaimers, and bracket numbers to save prompt tokens
+            content = content.split("References:\n")[0].split("\n\nReferences:")[0]
+            content = re.sub(r'Disclaimer:.*$', '', content, flags=re.DOTALL)
+            content = re.sub(r'अस्वीकरण:.*$', '', content, flags=re.DOTALL)
+            content = content.strip()
         messages.append({
             "role": msg["role"],
-            "content": msg["content"]
+            "content": content
         })
 
     # Append current turn user query along with retrieved context
@@ -132,9 +194,9 @@ def generate_response(user_query, context_chunks, chat_history=None, temperature
         response = client.chat.completions.create(
             model=MODEL_NAME,
             messages=messages,
-            temperature=temperature,  # Low temperature to ensure high grounding and minimal creativity
+            temperature=temperature,
             max_tokens=2400,
-            timeout=60.0  # Increased to 60 seconds to allow slow endpoints to respond
+            timeout=90.0  # Extended to 90 seconds to prevent queue dropouts
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
@@ -144,16 +206,13 @@ def generate_response(user_query, context_chunks, chat_history=None, temperature
 def format_response_with_citations(llm_response, context_chunks):
     """
     Parses the LLM response to check which citation numbers ([1], [2], etc.) are used,
-    and appends a clean bibliography. Duplicate sources are grouped together (e.g. [1, 2] Source: ...).
+    and appends a clean bibliography.
     """
-    # Find all digits inside square brackets in the LLM response
     used_indices = set(map(int, re.findall(r'\[(\d+)\]', llm_response)))
     
-    # If no citations are used, return response as is
     if not used_indices:
         return llm_response
         
-    # Group indices and sections by unique source key (source_name, title, url)
     grouped_refs = {}
     for idx in sorted(used_indices):
         chunk_idx = idx - 1
@@ -163,8 +222,6 @@ def format_response_with_citations(llm_response, context_chunks):
             source_name = meta.get("source_name", "Unknown Source")
             title = meta.get("title", "Unknown Title")
             url = meta.get("source_url", "")
-            
-            # Extract section info
             section = meta.get("section_name", meta.get("section", ""))
             
             ref_key = (source_name, title, url)
@@ -176,7 +233,6 @@ def format_response_with_citations(llm_response, context_chunks):
                 grouped_refs[ref_key]["sections"].add(section)
                 
     references = []
-    # Sort the bibliography by the first citation number of each group (e.g. [1, 3] appears before [2])
     sorted_groups = sorted(grouped_refs.items(), key=lambda x: x[1]["indices"][0])
     
     for ref_key, data in sorted_groups:
@@ -196,22 +252,7 @@ def format_response_with_citations(llm_response, context_chunks):
         return llm_response
         
     bibliography = "\n\nReferences:\n" + "\n".join(references)
-    
-    # Place references before the medical disclaimer if present to look clean
-    disclaimer_markers = ["Disclaimer:", "अस्वीकरण:", "Descargo de responsabilidad:", "Avertissement:"]
-    found_marker = None
-    for marker in disclaimer_markers:
-        if marker in llm_response:
-            found_marker = marker
-            break
-
-    if found_marker:
-        parts = llm_response.split(found_marker, 1)
-        main_body = parts[0].strip()
-        disclaimer = found_marker + parts[1]
-        return f"{main_body}\n{bibliography}\n\n{disclaimer}"
-    else:
-        return f"{llm_response}\n{bibliography}"
+    return f"{llm_response}\n{bibliography}"
 
 # --- STEP 5: CONNECT RETRIEVAL TO GENERATION ---
 def query_rag_chatbot(user_query, chat_history=None, n_results=5, temperature=0.1, language="English"):
@@ -227,18 +268,19 @@ def query_rag_chatbot(user_query, chat_history=None, n_results=5, temperature=0.
     # A. Medical Prescription/Dosage Check
     if is_unsafe_medical_query(user_query):
         print("🛑 Local Guardrail Triggered: Medical Prescription/Dosage Check")
+        refusal_msg = get_localized_guardrail_refusal("medical_safety", language=language)
         return {
-            "answer": "As an AI health awareness assistant, I cannot provide medical diagnoses, drug prescriptions, medicine dosages, or treatment decisions. Please consult a qualified medical professional for specific clinical advice and treatment.",
+            "answer": refusal_msg,
             "chunks": [],
             "distance": 1.0
         }
 
     # B. Proper Noun check (verifies user is asking about supported schemes if query is English)
-    # Skip proper noun check for non-English queries as they will be translated to English during rewriting
     if (not language or language == "English") and not passes_proper_noun_check(user_query):
         print("🛑 Local Guardrail Triggered: Out-of-Bounds Query (Proper Noun Check)")
+        refusal_msg = get_localized_guardrail_refusal("out_of_bounds", language=language)
         return {
-            "answer": "I am sorry, but I do not have enough information in my database to answer your query.",
+            "answer": refusal_msg,
             "chunks": [],
             "distance": 1.0
         }
@@ -248,14 +290,15 @@ def query_rag_chatbot(user_query, chat_history=None, n_results=5, temperature=0.
     # 2. Rewrite/Translate the query into standalone English search terms
     search_query = rewrite_query_with_history(user_query, chat_history, language=language)
     
-    # 3. Retrieve matching chunks on the English query (bypassing proper noun check for internal rewrite)
+    # 3. Retrieve matching chunks on the English query
     retrieval_result = retrieve_for_generation(search_query, n_results=n_results, run_proper_noun_check=False)
     
     # 4. Handle remaining guardrail rejections (semantic distance check)
     if retrieval_result["status"] == "REJECTED_OUT_OF_BOUNDS":
         print("🛑 Local Guardrail Triggered: Out-of-Bounds Query (Distance)")
+        refusal_msg = get_localized_guardrail_refusal("out_of_bounds", language=language)
         return {
-            "answer": retrieval_result["message"],
+            "answer": refusal_msg,
             "chunks": [],
             "distance": retrieval_result["distance"]
         }

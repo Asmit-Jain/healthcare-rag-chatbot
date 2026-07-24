@@ -305,55 +305,6 @@ with st.sidebar:
     
     st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
     
-    # 3. Multi-Language Selector Dropdown
-    st.markdown("**🌐 Language Settings**")
-    language_options = [
-        "English",
-        "Hindi (हिंदी)",
-        "Hinglish (Hindi in Roman script)",
-        "Bengali (বাংলা)",
-        "Tamil (தமிழ்)",
-        "Telugu (తెలుగు)",
-        "Marathi (मराठी)",
-        "Gujarati (ગુજરાતી)",
-        "Spanish (Español)",
-        "French (Français)",
-        "German (Deutsch)",
-        "Custom / Other"
-    ]
-    
-    current_lang = st.session_state.selected_language
-    if current_lang in language_options:
-        default_lang_idx = language_options.index(current_lang)
-    else:
-        default_lang_idx = language_options.index("Custom / Other")
-        if not st.session_state.custom_language and current_lang:
-            st.session_state.custom_language = current_lang
-
-    chosen_lang_option = st.selectbox(
-        "Response Language",
-        language_options,
-        index=default_lang_idx,
-        help="Select the target language for AI responses."
-    )
-
-    if chosen_lang_option == "Custom / Other":
-        custom_val = st.text_input(
-            "Specify Language",
-            value=st.session_state.custom_language,
-            placeholder="e.g. Punjabi, Japanese, Russian..."
-        )
-        st.session_state.custom_language = custom_val
-        active_target_language = custom_val.strip() if custom_val.strip() else "English"
-    else:
-        active_target_language = chosen_lang_option
-
-    # Sync selection to session state and database
-    if st.session_state.selected_language != active_target_language:
-        st.session_state.selected_language = active_target_language
-        if st.session_state.active_session_id and mongo_active:
-            update_session_language(st.session_state.active_session_id, active_target_language)
-    
     st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
     
     # 3. Clean Clear Conversation Button
@@ -367,32 +318,46 @@ with st.sidebar:
         st.success("Conversation cleared successfully!")
         st.rerun()
 
+def get_disclaimer_for_language(lang):
+    if "Hindi" in lang or "हिंदी" in lang:
+        return "डिस्क्लेमर: यह जानकारी केवल शैक्षिक उद्देश्यों के लिए है। कृपया विशिष्ट नैदानिक सलाह और उपचार के लिए एक योग्य चिकित्सक से परामर्श करें।"
+    elif "Hinglish" in lang:
+        return "Disclaimer: Ye jankari educational purposes ke liye hai. Specific clinical advice aur treatment ke liye ek qualified doctor se consult kare."
+    elif "Spanish" in lang or "Español" in lang:
+        return "Descargo de responsabilidad: Esta información es solo para fines educativos. Consulte a un profesional médico cualificado para obtener asesoramiento clínico y tratamiento específicos."
+    elif "French" in lang or "Français" in lang:
+        return "Avertissement: Ces informations sont fournies à des fins éducatives uniquement. Veuillez consulter un professionnel de la santé qualifié."
+    else:
+        return "Disclaimer: This information is for educational purposes only. Please consult a qualified medical professional for specific clinical advice and treatment."
+
 # --- STEP 4 & 5: DISPLAY CONVERSATION BUBBLES ---
 for msg_idx, message in enumerate(st.session_state.messages):
     with st.chat_message(message["role"]):
-        # Clean up plain-text references for the UI bubble if it's assistant's response
         display_content = message["content"]
-        if message["role"] == "assistant" and "\n\nReferences:" in display_content:
-            parts = display_content.split("\n\nReferences:", 1)
-            answer_part = parts[0]
-            disclaimer_part = ""
-            # Re-extract disclaimer across languages to display it at the bottom of the clean response
-            disclaimer_markers = ["Disclaimer:", "अस्वीकरण:", "Descargo de responsabilidad:", "Avertissement:"]
-            found_marker = None
-            if len(parts) > 1:
-                for marker in disclaimer_markers:
-                    if marker in parts[1]:
-                        found_marker = marker
-                        break
-                if found_marker:
-                    disclaimer_text = parts[1].split(found_marker, 1)[1].strip()
-                    disclaimer_part = f"\n\n*{found_marker} {disclaimer_text}*"
-            display_content = answer_part + disclaimer_part
+        if message["role"] == "assistant":
+            # Strip plain-text references section from display content
+            if "\n\nReferences:" in display_content:
+                display_content = display_content.split("\n\nReferences:")[0].strip()
+            if "References:\n" in display_content:
+                display_content = display_content.split("References:\n")[0].strip()
+            
+            # Strip embedded disclaimers if present to avoid duplication
+            display_content = re.sub(r'Disclaimer:.*$', '', display_content, flags=re.DOTALL).strip()
+            display_content = re.sub(r'अस्वीकरण:.*$', '', display_content, flags=re.DOTALL).strip()
+            display_content = re.sub(r'Descargo de responsabilidad:.*$', '', display_content, flags=re.DOTALL).strip()
+
+            # Programmatically append clean localized disclaimer at bottom
+            disclaimer_text = get_disclaimer_for_language(st.session_state.selected_language)
+            display_content += f"\n\n*{disclaimer_text}*"
             
         st.markdown(display_content)
         
-        # Step 5: Render Citations and RAG Inspector under assistant response
+        # Step 5: Render Citations, Response Time, and RAG Inspector under assistant response
         if message["role"] == "assistant":
+            # Render Response Time latency badge if recorded
+            exec_time = message.get("execution_time")
+            if exec_time:
+                st.caption(f"⚡ Response Time: `{exec_time:.2f}s`")
             # 1. Parse and render Clickable Citation Links
             if "chunks" in message and message["chunks"]:
                 import re
@@ -472,7 +437,59 @@ if len(st.session_state.messages) == 0:
             st.rerun()
 
 # --- STEP 4: CONVERSATIONAL CHAT INPUT & RUN PIPELINE ---
-user_query = st.chat_input("Ask MedLink...")
+st.markdown('<div style="margin-top: 15px;"></div>', unsafe_allow_html=True)
+
+# Main Area Language Selector Bar
+col_in1, col_in2 = st.columns([3, 1])
+
+with col_in2:
+    language_options = [
+        "English",
+        "Hindi (हिंदी)",
+        "Hinglish (Hindi in Roman script)",
+        "Bengali (বাংলা)",
+        "Tamil (தமிழ்)",
+        "Telugu (తెలుగు)",
+        "Marathi (मराठी)",
+        "Gujarati (ગુજરાતી)",
+        "Spanish (Español)",
+        "French (Français)",
+        "German (Deutsch)",
+        "Custom / Other"
+    ]
+    current_lang = st.session_state.selected_language
+    if current_lang in language_options:
+        default_lang_idx = language_options.index(current_lang)
+    else:
+        default_lang_idx = language_options.index("Custom / Other")
+        if not st.session_state.custom_language and current_lang:
+            st.session_state.custom_language = current_lang
+
+    chosen_lang_option = st.selectbox(
+        "🌐 Response Language",
+        language_options,
+        index=default_lang_idx,
+        help="Select the target language for AI responses."
+    )
+
+    if chosen_lang_option == "Custom / Other":
+        custom_val = st.text_input(
+            "Specify Language",
+            value=st.session_state.custom_language,
+            placeholder="e.g. Punjabi, Japanese..."
+        )
+        st.session_state.custom_language = custom_val
+        active_target_language = custom_val.strip() if custom_val.strip() else "English"
+    else:
+        active_target_language = chosen_lang_option
+
+    if st.session_state.selected_language != active_target_language:
+        st.session_state.selected_language = active_target_language
+        if st.session_state.active_session_id and mongo_active:
+            update_session_language(st.session_state.active_session_id, active_target_language)
+
+with col_in1:
+    user_query = st.chat_input("Ask MedLink...")
 
 # If suggestion was clicked, intercept and overwrite the input
 if st.session_state.suggestion_clicked:
@@ -480,11 +497,14 @@ if st.session_state.suggestion_clicked:
     st.session_state.suggestion_clicked = None  # Reset state
 
 if user_query:
+    # Capture target language snapshot for active execution turn
+    target_lang_turn = st.session_state.selected_language
+
     # 0. Auto-create new session in MongoDB Atlas on first query if active_session_id is None
     if st.session_state.active_session_id is None and mongo_active:
         new_sess_id = f"session-{uuid.uuid4()}"
         auto_title = user_query[:28] + "..." if len(user_query) > 28 else user_query
-        create_chat_session(new_sess_id, title=auto_title, language=st.session_state.selected_language)
+        create_chat_session(new_sess_id, title=auto_title, language=target_lang_turn)
         st.session_state.active_session_id = new_sess_id
 
     # 1. Render and append user's query
@@ -496,28 +516,33 @@ if user_query:
     if st.session_state.active_session_id and mongo_active:
         append_message_to_session(st.session_state.active_session_id, "user", user_query)
     
-    # 2. Call backend RAG pipeline inside a loading spinner
+    # 2. Call backend RAG pipeline inside a loading spinner with timer
     with st.chat_message("assistant"):
-        with st.spinner("Searching verified database and calling Llama 3.1..."):
+        with st.spinner(f"Searching verified database and calling Llama 3.1 ({target_lang_turn})..."):
+            import time
+            start_time = time.time()
             result = query_rag_chatbot(
                 user_query=user_query,
                 chat_history=st.session_state.chat_history,
                 n_results=n_results,
                 temperature=temperature,
-                language=st.session_state.selected_language
+                language=target_lang_turn
             )
+            exec_time = time.time() - start_time
             answer = result["answer"]
             st.markdown(answer)
+            st.caption(f"⚡ Response Time: `{exec_time:.2f}s`")
             
     # 3. Append assistant response and metadata to session state
     st.session_state.messages.append({
         "role": "assistant",
         "content": answer,
         "chunks": result["chunks"],
-        "distance": result["distance"]
+        "distance": result["distance"],
+        "execution_time": exec_time
     })
     
-    # Save assistant response to MongoDB Atlas (including chunks and distance!)
+    # Save assistant response to MongoDB Atlas
     if st.session_state.active_session_id and mongo_active:
         append_message_to_session(
             st.session_state.active_session_id,
