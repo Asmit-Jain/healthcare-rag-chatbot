@@ -500,8 +500,9 @@ for msg_idx, message in enumerate(st.session_state.messages):
             disclaimer_pattern = r'(\*?\b(Disclaimer|Haftungsausschluss|Descargo de responsabilidad|Avertissement|अस्वीकरण|डिस्क्लोमर|डिस्क्लेमर|দাবি পরিত্যাগ|மறுப்பு|గమనిక|અસ્વીકરણ)\b:?.*$)'
             display_content = re.sub(disclaimer_pattern, '', display_content, flags=re.IGNORECASE | re.DOTALL).strip()
 
-            # Programmatically append clean localized disclaimer at bottom
-            disclaimer_text = get_disclaimer_for_language(st.session_state.selected_language)
+            # Programmatically append clean localized disclaimer at bottom using message's language
+            msg_lang = message.get("language", st.session_state.selected_language)
+            disclaimer_text = get_disclaimer_for_language(msg_lang)
             display_content += f"\n\n*{disclaimer_text}*"
             
         st.markdown(display_content)
@@ -618,11 +619,11 @@ with col_lang2:
         "Custom / Other"
     ]
     current_lang = st.session_state.selected_language
-    if current_lang in language_options:
+    if current_lang in language_options and current_lang != "Custom / Other":
         default_lang_idx = language_options.index(current_lang)
     else:
         default_lang_idx = language_options.index("Custom / Other")
-        if not st.session_state.custom_language and current_lang:
+        if not st.session_state.custom_language and current_lang and current_lang not in language_options:
             st.session_state.custom_language = current_lang
 
     chosen_lang_option = st.selectbox(
@@ -714,7 +715,8 @@ if user_query:
         "content": answer,
         "chunks": result["chunks"],
         "distance": result["distance"],
-        "execution_time": exec_time
+        "execution_time": exec_time,
+        "language": target_lang_turn
     })
     
     # Save assistant response to MongoDB Atlas
@@ -724,7 +726,8 @@ if user_query:
             "assistant",
             answer,
             chunks=result["chunks"],
-            distance=result["distance"]
+            distance=result["distance"],
+            language=target_lang_turn
         )
     
     # 4. Update the sliding multi-turn context memory

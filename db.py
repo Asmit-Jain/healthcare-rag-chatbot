@@ -140,7 +140,7 @@ def create_chat_session(session_id, user_id=None, title="New Chat", language="En
         print(f"[ERROR] Failed to create chat session {session_id}: {e}")
         return False
 
-def append_message_to_session(session_id, role, content, chunks=None, distance=None):
+def append_message_to_session(session_id, role, content, chunks=None, distance=None, language=None):
     """
     Appends a user or assistant message to the specified chat session.
     """
@@ -155,6 +155,8 @@ def append_message_to_session(session_id, role, content, chunks=None, distance=N
             msg_obj["chunks"] = chunks
         if distance is not None:
             msg_obj["distance"] = distance
+        if language is not None:
+            msg_obj["language"] = language
 
         result = collection.update_one(
             {"session_id": session_id},

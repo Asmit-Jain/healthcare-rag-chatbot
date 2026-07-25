@@ -1,3 +1,4 @@
+import os
 import sys
 import re
 import chromadb
@@ -13,7 +14,7 @@ print("⏳ Connecting to ChromaDB...")
 chroma_client = chromadb.PersistentClient(path="./chroma_database")
 collection = chroma_client.get_collection(name="healthcare_knowledge_base")
 
-# --- STEP 2: SEMANTIC ENCODING TRANSFORMS CORE INITIALIZATION ---
+# --- STEP 2: SEMANTIC ENCODING TRANSFORMS INITIALIZATION ---
 print("⏳ Loading BGE-M3 embedding model...")
 embedding_model = SentenceTransformer("BAAI/bge-m3")
 
@@ -207,7 +208,7 @@ def evaluate_retrieve(user_query, n_results=5, run_proper_noun_check=True):
         if current_count < 3:
             filtered_ranked_ids.append(chunk_id)
             doc_counts[doc_id] = current_count + 1
-            
+
     return filtered_ranked_ids[:n_results], best_semantic_distance
 
 # --- STEP 7: ENTRYPOINT FOR GENERATION PIPELINE ---
@@ -247,7 +248,7 @@ def retrieve_for_generation(user_query, n_results=3, run_proper_noun_check=True)
                 "text": doc_data['documents'][0],
                 "metadata": doc_data['metadatas'][0]
             })
-            
+
     return {
         "status": "SUCCESS",
         "chunks": chunks,

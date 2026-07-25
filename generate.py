@@ -135,10 +135,10 @@ def rewrite_query_with_history(user_query, chat_history, language="English"):
             role = "User" if msg["role"] == "user" else "Assistant"
             content = msg["content"]
             
-            # Sanitize content: strip references, disclaimers, and bracket citations [1], [2]
+            # Sanitize content: strip references, disclaimers across all languages, and bracket citations [1], [2]
             clean_content = content.split("References:\n")[0].split("\n\nReferences:")[0]
-            clean_content = re.sub(r'Disclaimer:.*$', '', clean_content, flags=re.DOTALL)
-            clean_content = re.sub(r'अस्वीकरण:.*$', '', clean_content, flags=re.DOTALL)
+            disclaimer_pattern = r'(\*?\b(Disclaimer|Haftungsausschluss|Descargo de responsabilidad|Avertissement|अस्वीकरण|डिस्क्लोमर|डिस्क्लेमर|দাবি পরিত্যাগ|மறுப்பு|గమనిక|અસ્વીકરણ)\b:?.*$)'
+            clean_content = re.sub(disclaimer_pattern, '', clean_content, flags=re.IGNORECASE | re.DOTALL)
             clean_content = re.sub(r'\[\d+\]', '', clean_content)
             clean_content = clean_content.strip()
             
@@ -202,6 +202,19 @@ def parse_rewritten_query(raw_text: str) -> str:
         lines = [line.strip() for line in raw_text.split("\n") if line.strip()]
         return lines[-1].strip('"') if lines else raw_text
 
+def normalize_language_name(language: str) -> str:
+    """
+    Strips non-Latin script parenthetical suffixes from UI selectbox strings to provide
+    clean language instructions to Llama 3.1 70B (e.g. 'Gujarati (ગુજરાતી)' -> 'Gujarati').
+    Works universally across all world languages.
+    """
+    if not language:
+        return "English"
+    if "Hinglish" in language:
+        return "Hinglish (Hindi written using English/Roman alphabet)"
+    clean_name = language.split("(")[0].strip()
+    return clean_name if clean_name else language
+
 def generate_response(user_query, context_chunks, chat_history=None, temperature=0.1, language="English"):
     """
     Assembles context prompt, appends sanitized chat history, calls Llama model, and returns response.
@@ -219,10 +232,13 @@ def generate_response(user_query, context_chunks, chat_history=None, temperature
         formatted_context += f"Content: {chunk.get('text', '')}\n"
     formatted_context += "---\n"
 
+    # Normalize language string to prevent model confusion
+    clean_lang = normalize_language_name(language)
+
     # Dynamic System Prompt with Language Constraint
     sys_prompt = SYSTEM_PROMPT
-    if language and language != "English":
-        sys_prompt += f"\n6. STRICT LANGUAGE REQUIREMENT: You MUST synthesize and write your entire final response strictly in {language}. Retain inline citation brackets like [1], [2] intact."
+    if clean_lang and clean_lang != "English":
+        sys_prompt += f"\n6. STRICT LANGUAGE REQUIREMENT: Regardless of the language of the user's question or previous chat messages, you MUST write your ENTIRE final response using complete, fluent sentences strictly in {clean_lang}. Retain inline citation brackets like [1], [2] intact."
 
     # Compile messages payload starting with system instructions
     messages = [{"role": "system", "content": sys_prompt}]
@@ -231,27 +247,34 @@ def generate_response(user_query, context_chunks, chat_history=None, temperature
     for msg in chat_history[-10:]:
         content = msg["content"]
         if msg["role"] == "assistant":
-            # Strip references, disclaimers, and bracket numbers to save prompt tokens
+            # Strip references, disclaimers across all languages, and bracket numbers to save prompt tokens
             content = content.split("References:\n")[0].split("\n\nReferences:")[0]
-            content = re.sub(r'Disclaimer:.*$', '', content, flags=re.DOTALL)
-            content = re.sub(r'अस्वीकरण:.*$', '', content, flags=re.DOTALL)
-            content = content.strip()
+            disclaimer_pattern = r'(\*?\b(Disclaimer|Haftungsausschluss|Descargo de responsabilidad|Avertissement|अस्वीकरण|डिस्क्लोमर|डिस्क्लेमर|দাবি পরিত্যাগ|மறுப்பு|గమనిక|અસ્વીકરણ)\b:?.*$)'
+            content = re.sub(disclaimer_pattern, '', content, flags=re.IGNORECASE | re.DOTALL).strip()
         messages.append({
             "role": msg["role"],
             "content": content
         })
 
+    user_payload = f"Retrieved Context:\n{formatted_context}\nUser Query: {user_query}"
+    if clean_lang and clean_lang != "English":
+        user_payload += f"\n\nSTRICT LANGUAGE DIRECTIVE: Regardless of previous chat messages or the language of the user's input question, you MUST write your ENTIRE response using complete, fluent sentences strictly in {clean_lang}. Do NOT use any other language or script."
+
     # Append current turn user query along with retrieved context
     messages.append({
         "role": "user",
-        "content": f"Retrieved Context:\n{formatted_context}\nUser Query: {user_query}"
+        "content": user_payload
     })
 
     try:
+        # Prevent token repetition loops in non-Latin scripts (Korean, Chinese, Japanese) by enforcing min temperature 0.3 & frequency penalty
+        gen_temp = max(0.3, temperature) if clean_lang and clean_lang != "English" else temperature
+
         response = client.chat.completions.create(
             model=MODEL_NAME,
             messages=messages,
-            temperature=temperature,
+            temperature=gen_temp,
+            frequency_penalty=0.3,
             max_tokens=2400,
             timeout=180.0  # Extended to 180 seconds (3 minutes) to prevent queue dropouts
         )
