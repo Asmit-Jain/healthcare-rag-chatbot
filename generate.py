@@ -21,8 +21,9 @@ client = OpenAI(
     api_key=api_key
 )
 
-# Llama 3.1 70B Instruct model on NVIDIA NIM
+# Llama 3.1 70B & 8B models on NVIDIA NIM
 MODEL_NAME = "meta/llama-3.1-70b-instruct"
+MODEL_NAME_FAST = "meta/llama-3.1-8b-instruct"
 
 # --- STEP 4: SYSTEM PROMPT WITH STRICT GROUNDING AND MEDICAL GUARDRAILS ---
 SYSTEM_PROMPT = """You are a professional, cautious, and helpful Healthcare Awareness AI Assistant. Your goal is to answer the user's query by strictly using ONLY the facts provided in the "Retrieved Context" section below.
@@ -34,6 +35,7 @@ Follow these strict rules at all times:
    - If the user asks for prescriptions, dosages, or diagnostic medical treatment, you must refuse to answer and advise them to consult a qualified physician.
 3. Citation Rule: When you state a fact from a retrieved chunk, you MUST cite it using inline brackets matching its chunk number (e.g., [1], [2]).
 4. Tone: Maintain a highly cautious, educational, and objective tone at all times.
+5. Direct & Detailed Structure: DO NOT echo, restate, or repeat the user's question at the beginning of your response. Start directly with the answer content. When answering in any language, provide complete, detailed, and thorough structured bullet points rather than brief summaries.
 """
 
 def get_localized_guardrail_refusal(refusal_type, language="English"):
@@ -97,6 +99,26 @@ def get_localized_guardrail_refusal(refusal_type, language="English"):
         print(f"[WARNING] Localized refusal translation failed: {e}. Falling back to English.")
         return english_text
 
+def extract_clean_search_keywords(user_query: str) -> str:
+    """
+    Fallback helper: Strips common non-English / Hinglish stop words to extract core English search keywords
+    (e.g., 'Cancer kya hai aur iske symptoms kya hain?' -> 'Cancer symptoms') for accurate ChromaDB vector retrieval.
+    """
+    stopwords = {
+        'kya', 'hai', 'hain', 'ka', 'ki', 'ke', 'ko', 'se', 'me', 'mein', 'par', 'aur', 'ya',
+        'iske', 'iski', 'iska', 'inhe', 'unhe', 'kaise', 'kab', 'kyun', 'kahan', 'bhi', 'hoga',
+        'hogi', 'hote', 'hoti', 'hota', 'chahiye', 'batao', 'bataiye', 'tell', 'about', 'what',
+        'is', 'are', 'the', 'que', 'es', 'est', 'le', 'la', 'les', 'de', 'du', 'des', 'und', 'ist'
+    }
+    words = re.findall(r'\b[a-zA-Z0-9-]+\b', user_query)
+    clean_tokens = [w for w in words if w.lower() not in stopwords]
+    
+    if clean_tokens:
+        clean_query = " ".join(clean_tokens)
+        print(f"🧹 Smart Keyword Extraction Fallback: Extracted search terms: '{clean_query}'")
+        return clean_query
+    return user_query
+
 def rewrite_query_with_history(user_query, chat_history, language="English"):
     """
     Uses Llama 3.1 70B to rewrite a follow-up query into a standalone search query if history exists,
@@ -135,28 +157,50 @@ Conversation History:
 User Question: {user_query}
 Standalone English Search Query:"""
 
+    # Tier 1: Try Llama 3.1 70B with tight 8s timeout
     try:
         response = client.chat.completions.create(
             model=MODEL_NAME,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.0,
             max_tokens=200,
-            timeout=30.0
+            timeout=8.0
         )
         raw_rewritten = response.choices[0].message.content.strip()
-        if "Standalone English Search Query:" in raw_rewritten:
-            rewritten = raw_rewritten.split("Standalone English Search Query:")[-1].strip().strip('"')
-        elif "Translation:" in raw_rewritten:
-            rewritten = raw_rewritten.split("Translation:")[-1].strip().strip('"')
-        else:
-            lines = [line.strip() for line in raw_rewritten.split("\n") if line.strip()]
-            rewritten = lines[-1].strip('"') if lines else raw_rewritten
-
-        print(f"🔄 Conversational/Multilingual Context: Rewrote query to English standalone as: '{rewritten}'")
+        rewritten = parse_rewritten_query(raw_rewritten)
+        print(f"🔄 Multilingual Context (Tier 1 - 70B): Rewrote query as: '{rewritten}'")
         return rewritten
-    except Exception as e:
-        print(f"[WARNING] Query rewriting/translation failed: {e}. Falling back to original query.")
-        return user_query
+    except Exception as e_70b:
+        print(f"[WARNING] Tier 1 (70B) query translation timed out or failed: {e_70b}. Handing off to Tier 2 (8B Fast Model)...")
+        
+        # Tier 2: Try Llama 3.1 8B Fast Model with 10s timeout
+        try:
+            response_fast = client.chat.completions.create(
+                model=MODEL_NAME_FAST,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.0,
+                max_tokens=200,
+                timeout=10.0
+            )
+            raw_rewritten_fast = response_fast.choices[0].message.content.strip()
+            rewritten_fast = parse_rewritten_query(raw_rewritten_fast)
+            print(f"⚡ Multilingual Context (Tier 2 - 8B Fast Handoff): Rewrote query as: '{rewritten_fast}'")
+            return rewritten_fast
+        except Exception as e_8b:
+            print(f"[WARNING] Tier 2 (8B) query translation also failed: {e_8b}. Falling back to Tier 3 Keyword Extraction.")
+            return extract_clean_search_keywords(user_query)
+
+def parse_rewritten_query(raw_text: str) -> str:
+    """
+    Utility parser to extract clean standalone query text from LLM completion responses.
+    """
+    if "Standalone English Search Query:" in raw_text:
+        return raw_text.split("Standalone English Search Query:")[-1].strip().strip('"')
+    elif "Translation:" in raw_text:
+        return raw_text.split("Translation:")[-1].strip().strip('"')
+    else:
+        lines = [line.strip() for line in raw_text.split("\n") if line.strip()]
+        return lines[-1].strip('"') if lines else raw_text
 
 def generate_response(user_query, context_chunks, chat_history=None, temperature=0.1, language="English"):
     """
@@ -178,7 +222,7 @@ def generate_response(user_query, context_chunks, chat_history=None, temperature
     # Dynamic System Prompt with Language Constraint
     sys_prompt = SYSTEM_PROMPT
     if language and language != "English":
-        sys_prompt += f"\n5. STRICT LANGUAGE REQUIREMENT: You MUST synthesize and write your entire final response strictly in {language}. Retain inline citation brackets like [1], [2] intact."
+        sys_prompt += f"\n6. STRICT LANGUAGE REQUIREMENT: You MUST synthesize and write your entire final response strictly in {language}. Retain inline citation brackets like [1], [2] intact."
 
     # Compile messages payload starting with system instructions
     messages = [{"role": "system", "content": sys_prompt}]
@@ -209,7 +253,7 @@ def generate_response(user_query, context_chunks, chat_history=None, temperature
             messages=messages,
             temperature=temperature,
             max_tokens=2400,
-            timeout=90.0  # Extended to 90 seconds to prevent queue dropouts
+            timeout=180.0  # Extended to 180 seconds (3 minutes) to prevent queue dropouts
         )
         return response.choices[0].message.content.strip()
     except Exception as e:

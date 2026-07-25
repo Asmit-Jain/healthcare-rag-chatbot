@@ -28,7 +28,6 @@ def get_mongo_client():
             serverSelectionTimeoutMS=5000  # 5 second timeout for fast diagnostics check
         )
     return _mongo_client
-
 def get_sessions_collection():
     """
     Returns the chat_sessions MongoDB collection.
@@ -44,23 +43,90 @@ def check_mongo_connection():
     """
     try:
         client = get_mongo_client()
-        # The admin command 'ping' is a lightweight way to verify server connectivity
         client.admin.command('ping')
         return True
     except Exception as e:
         print(f"[ERROR] MongoDB Connection Check Failed: {e}")
         return False
 
+USERS_COLLECTION_NAME = "users"
+
+def get_users_collection():
+    """
+    Returns the users MongoDB collection.
+    """
+    client = get_mongo_client()
+    db = client[DB_NAME]
+    return db[USERS_COLLECTION_NAME]
+
+# --- USER AUTHENTICATION CRUD HELPERS ---
+
+def register_user(email: str, full_name: str, password: str):
+    """
+    Registers a new user in MongoDB Atlas with a bcrypt hashed password.
+    Returns (success_bool, result_dict_or_error_message).
+    """
+    try:
+        from auth import hash_password, create_access_token
+        collection = get_users_collection()
+        email_clean = email.strip().lower()
+        
+        # Check if user already exists
+        existing = collection.find_one({"email": email_clean})
+        if existing:
+            return False, "An account with this email address already exists. Please log in."
+
+        hashed_pw = hash_password(password)
+        user_doc = {
+            "email": email_clean,
+            "full_name": full_name.strip(),
+            "password_hash": hashed_pw,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        collection.insert_one(user_doc)
+        
+        user_payload = {"email": email_clean, "full_name": full_name.strip()}
+        token = create_access_token(user_payload)
+        return True, {"user": user_payload, "token": token}
+    except Exception as e:
+        print(f"[ERROR] Failed to register user {email}: {e}")
+        return False, f"Registration failed due to a database error: {e}"
+
+def login_user(email: str, password: str):
+    """
+    Authenticates a user against MongoDB Atlas bcrypt password hash.
+    Returns (success_bool, result_dict_or_error_message).
+    """
+    try:
+        from auth import verify_password, create_access_token
+        collection = get_users_collection()
+        email_clean = email.strip().lower()
+        
+        user_doc = collection.find_one({"email": email_clean})
+        if not user_doc:
+            return False, "No account found with this email address. Please sign up first."
+
+        if not verify_password(password, user_doc.get("password_hash", "")):
+            return False, "Incorrect password. Please double check and try again."
+
+        user_payload = {"email": email_clean, "full_name": user_doc.get("full_name", email_clean)}
+        token = create_access_token(user_payload)
+        return True, {"user": user_payload, "token": token}
+    except Exception as e:
+        print(f"[ERROR] Failed to login user {email}: {e}")
+        return False, f"Login failed due to a server error: {e}"
+
 # --- PHASE 2: DATABASE CRUD HELPER FUNCTIONS ---
 
-def create_chat_session(session_id, title="New Chat", language="English"):
+def create_chat_session(session_id, user_id=None, title="New Chat", language="English"):
     """
-    Creates a new chat session document in MongoDB.
+    Creates a new chat session document in MongoDB, attached to user_id.
     """
     try:
         collection = get_sessions_collection()
         session_doc = {
             "session_id": session_id,
+            "user_id": user_id,
             "title": title,
             "language": language,
             "is_pinned": False,
@@ -149,20 +215,20 @@ def update_session_language(session_id, language):
         print(f"[ERROR] Failed to update session language for {session_id}: {e}")
         return False
 
-def get_all_sessions():
+def get_all_sessions(user_id=None):
     """
-    Retrieves all chat sessions sorted by updated_at descending (newest first).
-    Returns a list of dicts containing session metadata.
+    Retrieves chat sessions for a specific user_id sorted by updated_at descending (newest first).
     """
     try:
         collection = get_sessions_collection()
+        query_filter = {"user_id": user_id} if user_id else {}
         sessions = list(collection.find(
-            {},
-            {"_id": 0, "session_id": 1, "title": 1, "language": 1, "is_pinned": 1, "created_at": 1, "updated_at": 1}
+            query_filter,
+            {"_id": 0, "session_id": 1, "user_id": 1, "title": 1, "language": 1, "is_pinned": 1, "created_at": 1, "updated_at": 1}
         ).sort("updated_at", -1))
         return sessions
     except Exception as e:
-        print(f"[ERROR] Failed to fetch sessions: {e}")
+        print(f"[ERROR] Failed to fetch sessions for user {user_id}: {e}")
         return []
 
 def get_session_messages(session_id):

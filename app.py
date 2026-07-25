@@ -150,22 +150,71 @@ custom_css = """
         margin-bottom: 0.75rem;
     }
 
-    /* Step 5: Citation chip card hover effects */
+    /* Step 5: Citation chip card hover effects with Fade-In Animation */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
     .citation-chip {
         background-color: #1e293b;
         border: 1px solid #10b981;
-        border-radius: 6px;
-        padding: 4px 10px;
+        border-radius: 8px;
+        padding: 5px 12px;
         text-align: center;
         color: #10b981;
         font-weight: 500;
-        font-size: 0.8rem;
-        transition: all 0.2s ease-in-out;
+        font-size: 0.82rem;
+        transition: all 0.25s ease-in-out;
         cursor: pointer;
+        animation: fadeIn 0.4s ease-out forwards;
     }
     .citation-chip:hover {
         background-color: #10b981;
         color: #0b0f19;
+        box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+        transform: scale(1.03);
+    }
+
+    /* Glassmorphic Chat Message Cards */
+    div[data-testid="stChatMessage"] {
+        background-color: rgba(17, 24, 39, 0.65) !important;
+        border: 1px solid rgba(31, 41, 55, 0.8) !important;
+        border-radius: 12px !important;
+        padding: 14px 18px !important;
+        margin-bottom: 12px !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25) !important;
+        backdrop-filter: blur(12px) !important;
+        transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease !important;
+    }
+    div[data-testid="stChatMessage"]:hover {
+        transform: translateY(-2px) !important;
+        border-color: rgba(16, 185, 129, 0.4) !important;
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.15) !important;
+    }
+
+    /* Compact 1-Line Amber Medical Warning Banner */
+    .compact-disclaimer {
+        background-color: rgba(245, 158, 11, 0.06);
+        border: 1px solid rgba(245, 158, 11, 0.25);
+        border-radius: 8px;
+        padding: 8px 14px;
+        margin-bottom: 1.2rem;
+        font-size: 0.85rem;
+        color: #f59e0b;
+        line-height: 1.4;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Sidebar Button Hover Slide Transition */
+    section[data-testid="stSidebar"] div.stButton > button {
+        transition: all 0.2s ease-in-out !important;
+    }
+    section[data-testid="stSidebar"] div.stButton > button:hover {
+        transform: translateX(3px) !important;
+        border-color: #10b981 !important;
     }
 
     /* 3-Dots Popover Styling Adjustments */
@@ -191,23 +240,13 @@ custom_css = """
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
-# --- STEP 1: MAIN AREA HEADER ---
-st.markdown('<div class="dashboard-title">🏥 MedLink Healthcare RAG Assistant</div>', unsafe_allow_html=True)
-st.markdown('<div class="dashboard-subtitle">A secure, grounded, and verified retrieval-augmented clinical awareness platform.</div>', unsafe_allow_html=True)
-st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
+from auth_ui import render_auth_card, render_user_profile_badge
 
-# --- STEP 3: MEDICAL DISCLAIMER NOTICE ---
-disclaimer_html = """
-<div class="disclaimer-card">
-    <span style="font-size: 1.2rem; line-height: 1;">⚠️</span>
-    <div class="disclaimer-text">
-        <strong>Medical Boundaries Disclaimer:</strong> As an AI healthcare awareness dashboard, this platform is designed purely to help navigate official public policy and general health resources. It <strong>cannot</strong> diagnose conditions, prescribe medications, or recommend treatment dosages. For clinical advice, always consult a qualified physician.
-    </div>
-</div>
-"""
-st.markdown(disclaimer_html, unsafe_allow_html=True)
-
-# --- STEP 4: SESSION STATE INITIALIZATION ---
+# --- STEP 4: SESSION STATE INITIALIZATION & AUTH ROUTER ---
+if "authenticated_user" not in st.session_state:
+    st.session_state.authenticated_user = None
+if "auth_token" not in st.session_state:
+    st.session_state.auth_token = None
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "chat_history" not in st.session_state:
@@ -221,8 +260,34 @@ if "selected_language" not in st.session_state:
 if "custom_language" not in st.session_state:
     st.session_state.custom_language = ""
 
+# If user is unauthenticated, render 2-column Auth Portal and stop execution
+if st.session_state.authenticated_user is None:
+    render_auth_card()
+    st.stop()
+
+# --- STEP 1: MAIN AREA HEADER (AUTHENTICATED ONLY) ---
+st.markdown('<div class="dashboard-title">🏥 MedLink AI</div>', unsafe_allow_html=True)
+st.markdown('<div class="dashboard-subtitle">Grounded Clinical Awareness & Verified Multilingual Health Intelligence</div>', unsafe_allow_html=True)
+
+# --- STEP 3: COMPACT MEDICAL DISCLAIMER NOTICE ---
+disclaimer_html = """
+<div class="compact-disclaimer">
+    <span style="font-size: 1.1rem; line-height: 1;">⚠️</span>
+    <div>
+        <strong>Medical Boundaries Disclaimer:</strong> This platform is designed purely for public health policy and awareness navigation. It <strong>cannot</strong> diagnose conditions, prescribe medications, or recommend treatments. Consult a qualified doctor for clinical advice.
+    </div>
+</div>
+"""
+st.markdown(disclaimer_html, unsafe_allow_html=True)
+
+current_user_id = st.session_state.authenticated_user.get("email")
+
 # --- STEP 2: SIDEBAR IMPLEMENTATION ---
 with st.sidebar:
+    # 0. User Profile Badge
+    render_user_profile_badge(st.session_state.authenticated_user)
+    st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
+
     # --- CHATGPT-STYLE SESSIONS SIDEBAR ---
     st.markdown("### 💬 Chat History")
     
@@ -236,7 +301,7 @@ with st.sidebar:
 
     # 2. Render past chat sessions from MongoDB Atlas with ChatGPT 3-Dots Menu
     if mongo_active:
-        past_sessions = get_all_sessions()
+        past_sessions = get_all_sessions(user_id=current_user_id)
         if past_sessions:
             pinned_sessions = [s for s in past_sessions if s.get("is_pinned", False)]
             recent_sessions = [s for s in past_sessions if not s.get("is_pinned", False)]
@@ -349,10 +414,20 @@ with st.sidebar:
         "Temperature",
         min_value=0.0,
         max_value=1.0,
-        value=0.1,
+        value=0.2,
         step=0.05,
         help="Low values ensure grounding and eliminate hallucinations."
     )
+    
+    st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
+    if st.button("🚪 Log Out", use_container_width=True):
+        st.session_state.authenticated_user = None
+        st.session_state.auth_token = None
+        st.session_state.active_session_id = None
+        st.session_state.messages = []
+        st.session_state.chat_history = []
+        st.session_state.suggestion_clicked = None
+        st.rerun()
 
 def get_disclaimer_for_language(lang):
     """
@@ -436,7 +511,14 @@ for msg_idx, message in enumerate(st.session_state.messages):
             # Render Response Time latency badge if recorded
             exec_time = message.get("execution_time")
             if exec_time:
-                st.caption(f"⚡ Response Time: `{exec_time:.2f}s`")
+                latency_html = (
+                    f'<div style="display:inline-flex; align-items:center; gap:6px; background:rgba(16, 185, 129, 0.08); '
+                    f'border:1px solid rgba(16, 185, 129, 0.25); border-radius:12px; padding:3px 10px; font-size:0.78rem; '
+                    f'color:#10b981; margin-top:6px; margin-bottom:4px;">'
+                    f'⚡ Response Time: <strong>{exec_time:.2f}s</strong>'
+                    f'</div>'
+                )
+                st.markdown(latency_html, unsafe_allow_html=True)
             # 1. Parse and render Clickable Citation Links
             if "chunks" in message and message["chunks"]:
                 import re
@@ -581,7 +663,7 @@ if user_query:
     if st.session_state.active_session_id is None and mongo_active:
         new_sess_id = f"session-{uuid.uuid4()}"
         auto_title = user_query[:28] + "..." if len(user_query) > 28 else user_query
-        create_chat_session(new_sess_id, title=auto_title, language=target_lang_turn)
+        create_chat_session(new_sess_id, user_id=current_user_id, title=auto_title, language=target_lang_turn)
         st.session_state.active_session_id = new_sess_id
 
     # 1. Render and append user's query
@@ -618,8 +700,10 @@ if user_query:
             disclaimer_pattern = r'(\*?\b(Disclaimer|Haftungsausschluss|Descargo de responsabilidad|Avertissement|अस्वीकरण|डिस्क्लोमर|डिस्क्लेमर|দাবি পরিত্যাগ|மறுப்பு|గమనిక|અસ્વીકરણ)\b:?.*$)'
             clean_answer = re.sub(disclaimer_pattern, '', clean_answer, flags=re.IGNORECASE | re.DOTALL).strip()
             
-            disclaimer_text = get_disclaimer_for_language(target_lang_turn)
-            clean_answer += f"\n\n*{disclaimer_text}*"
+            # Only append disclaimer if response is a valid answer (not an error, timeout, or guardrail refusal)
+            if not clean_answer.startswith("⚠️") and not clean_answer.startswith("[ERROR]"):
+                disclaimer_text = get_disclaimer_for_language(target_lang_turn)
+                clean_answer += f"\n\n*{disclaimer_text}*"
 
             st.markdown(clean_answer)
             st.caption(f"⚡ Response Time: `{exec_time:.2f}s`")
