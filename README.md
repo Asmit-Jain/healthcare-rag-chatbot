@@ -211,18 +211,14 @@ Health_Awareness_Chatbot/
 
 Follow these simple steps to run MedLink AI locally:
 
-### 1. Clone the Repository
+### 1. Clone the Repository & Install Dependencies
 ```bash
 git clone https://github.com/Asmit-Jain/healthcare-rag-chatbot.git
 cd healthcare-rag-chatbot
-```
-
-### 2. Install Python Dependencies
-```bash
 pip install -r requirements.txt
 ```
 
-### 3. Configure Environment Variables (`.env`)
+### 2. Configure Environment Variables (`.env`)
 Create a `.env` file in the root directory:
 ```env
 # Required: Llama 3.1 LLM generation via NVIDIA NIM API
@@ -234,6 +230,12 @@ MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/
 # Optional: Custom secret key for JWT token signing (uses default fallback if omitted)
 JWT_SECRET=your_custom_secret_key_here
 ```
+
+### 3. Data Processing & Vector Database Setup
+If building the ChromaDB vector store from scratch:
+1. **Chunking**: Run `chunking.ipynb` to generate text chunk files (`govt_chunks_raw.jsonl` and `who_chunks_raw.jsonl`) from the master JSON datasets (`govt_structured_master.json` and `who_structured_master_cleaned_safe.json`).
+2. **GPU Vector Embeddings**: Run `embedding-generation.ipynb` (preferably on Kaggle / Colab GPU for fast 2-minute computation) to generate embedded vector files (`govt_chunks_embedded.jsonl` and `who_chunks_embedded.jsonl`).
+3. **ChromaDB Ingestion**: Run `python build_database.py` to ingest the embedded files into local ChromaDB (`./chroma_database`).
 
 ### 4. Launch the Web Application
 ```bash

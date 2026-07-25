@@ -6,6 +6,8 @@ raw_data/
 .ipynb_checkpoints/
 __pycache__/
 !golden_test_set.json
+!govt_structured_master.json
+!who_structured_master_cleaned_safe.json
 
 # Secrets & Environment Variables (DO NOT PUSH TO GITHUB)
 .env
