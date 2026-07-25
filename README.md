@@ -31,6 +31,16 @@
 
 ---
 
+## 🖼️ Application Screenshots
+
+<p align="center">
+  <img src="screenshots/image-1.png" alt="MedLink AI Dashboard" width="32%" />
+  <img src="screenshots/image-2.png" alt="RAG Inspector Diagnostics" width="32%" />
+  <img src="screenshots/image-3.png" alt="Multilingual Intelligence" width="32%" />
+</p>
+
+---
+
 ## 📈 Empirical Evaluation Benchmark Results
 
 The retrieval and safety architecture of MedLink AI was empirically benchmarked against a **50-Query Golden Evaluation Suite** (`run_benchmark.py`). Below are the quantitative performance results demonstrating high precision, high recall, and strict safety enforcement:
@@ -192,6 +202,8 @@ Health_Awareness_Chatbot/
 │   └── build_database.py                 # Automated ChromaDB Vector Database Indexer Script
 │
 ├── 📑 Datasets & Configuration Seeds
+│   ├── govt_structured_master.json       # Master Government Schemes Dataset (288 Records)
+│   ├── who_structured_master_cleaned_safe.json # Master WHO Health Factsheets Dataset (239 Records)
 │   ├── health_schemes_list.csv           # Government Scheme URL Seed List
 │   ├── who_disease_links.csv             # WHO Factsheet URL Seed List
 │   ├── golden_test_set.json              # 50 Ground-Truth Benchmark Evaluation Test Suite
@@ -200,6 +212,7 @@ Health_Awareness_Chatbot/
 │   └── requirements.txt                  # Python Dependency Specifications
 │
 └── 🖼️ Assets & Documentation
+    ├── screenshots/                      # Application UI Screenshots (Dashboard, Diagnostics, Multilingual)
     ├── medlink_logo.png                  # MedLink AI Logo Asset
     ├── Healthcare_Awareness_GenAI_Assistant.pdf # Internship Problem Specification PDF
     └── README.md                         # Project Documentation
