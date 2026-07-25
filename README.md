@@ -50,56 +50,117 @@ The retrieval and safety architecture of MedLink AI was empirically benchmarked 
 
 MedLink AI implements a modular, high-throughput RAG architecture engineered for low retrieval latency, multi-turn history resolution, and zero-hallucination grounded response synthesis.
 
+<div align="center">
+
 ```text
-+-------------------------------------------------------------------------+
-|                            USER QUERY INPUT                             |
-|           (English, Hindi, Hinglish, Spanish, Bengali, etc.)            |
-+------------------------------------┬------------------------------------+
-                                     |
-                                     v
-+-------------------------------------------------------------------------+
-|                      MEDICAL SAFETY & GUARDRAILS                        |
-|       Checks: Unsafe Prescriptions / Dosages & Scheme Proper Nouns      |
-+------------------------------------┬------------------------------------+
-                                     |
-                         [Passes Safety Guardrails]
-                                     |
-                                     v
-+-------------------------------------------------------------------------+
-|                  3-TIER QUERY TRANSLATION CASCADE                       |
-|   Tier 1: Llama 3.1 70B  -->  Tier 2: Llama 3.1 8B  -->  Tier 3: BM25   |
-|   (Resolves multi-turn history & translates query to English search)   |
-+------------------------------------┬------------------------------------+
-                                     |
-                                     v
-+-------------------------------------------------------------------------+
-|                      2-STAGE HYBRID RRF SEARCH                          |
-|  +-----------------------------------+-------------------------------+  |
-|  |     Dense Semantic Search         |     Sparse Lexical Search     |  |
-|  |   (BAAI/bge-m3 + ChromaDB)        |  (BM25Okapi + Porter Stemmer) |  |
-|  +----------------─┬─────────────────+───────────────┬───────────────+  |
-|                    │                                 │                  |
-|                    └────────────────┬────────────────┘                  |
-|                                     │                                   |
-|                        Weighted RRF (0.85 / 0.15)                       |
-+------------------------------------┬------------------------------------+
-                                     |
-                                     v
-+-------------------------------------------------------------------------+
-|                     DISTANCE THRESHOLD & DIVERSITY                      |
-|       - 0.39 Distance Cutoff Filter (Rejects out-of-bounds queries)     |
-|       - Max 3 Chunks / Document (Prevents source monopolization)        |
-+------------------------------------┬------------------------------------+
-                                     |
-                                     v
-+-------------------------------------------------------------------------+
-|                   LLM RESPONSE GENERATION & SYNTHESIS                   |
-|   Llama 3.1 70B Instruct (NVIDIA NIM) + Inline Citations [1], [2]       |
-+------------------------------------┬------------------------------------+
-                                     |
-                                     v
-+-------------------------------------------------------------------------+
-|                     PERSISTENT SESSION & UI VAULT                       |
-|  MongoDB Atlas Vault + Message-Specific Language Disclaimers & RAG UI   |
-+-------------------------------------------------------------------------+
++-----------------------------------------------------------------------------------+
+|                                 USER QUERY INPUT                                  |
+|                (English, Hindi, Hinglish, Spanish, Bengali, etc.)                 |
++-----------------------------------------┬-----------------------------------------+
+                                          |
+                                          v
++-----------------------------------------------------------------------------------+
+|                            MEDICAL SAFETY & GUARDRAILS                            |
+|             Checks: Unsafe Prescriptions / Dosages & Scheme Proper Nouns          |
++-----------------------------------------┬-----------------------------------------+
+                                          |
+                              [Passes Safety Guardrails]
+                                          |
+                                          v
++-----------------------------------------------------------------------------------+
+|                        3-TIER QUERY TRANSLATION CASCADE                           |
+|        Tier 1: Llama 3.1 70B  -->  Tier 2: Llama 3.1 8B  -->  Tier 3: BM25        |
+|        (Resolves multi-turn history & translates query to English search)         |
++-----------------------------------------┬-----------------------------------------+
+                                          |
+                                          v
++-----------------------------------------------------------------------------------+
+|                            2-STAGE HYBRID RRF SEARCH                              |
+|  +----------------------------------------┬------------------------------------+  |
+|  |         Dense Semantic Search          |       Sparse Lexical Search        |  |
+|  |       (BAAI/bge-m3 + ChromaDB)         |    (BM25Okapi + Porter Stemmer)    |  |
+|  +----------------────┬───────────────────+──────────────────┬─────────────────+  |
+|                       │                                      │                    |
+|                       └───────────────────┬──────────────────┘                    |
+|                                           │                                       |
+|                              Weighted RRF (0.85 / 0.15)                           |
++-----------------------------------------┬-----------------------------------------+
+                                          |
+                                          v
++-----------------------------------------------------------------------------------+
+|                           DISTANCE THRESHOLD & DIVERSITY                          |
+|             - 0.39 Distance Cutoff Filter (Rejects out-of-bounds queries)         |
+|             - Max 3 Chunks / Document (Prevents source monopolization)            |
++-----------------------------------------┬-----------------------------------------+
+                                          |
+                                          v
++-----------------------------------------------------------------------------------+
+|                         LLM RESPONSE GENERATION & SYNTHESIS                       |
+|         Llama 3.1 70B Instruct (NVIDIA NIM) + Inline Citations [1], [2]           |
++-----------------------------------------┬-----------------------------------------+
+                                          |
+                                          v
++-----------------------------------------------------------------------------------+
+|                           PERSISTENT SESSION & UI VAULT                           |
+|        MongoDB Atlas Vault + Message-Specific Language Disclaimers & RAG UI       |
++-----------------------------------------------------------------------------------+
 ```
+
+</div>
+
+---
+
+## 📊 Healthcare Corpus & Data Provenance
+
+MedLink AI's knowledge base indexes **8,461 verified text chunks** extracted exclusively from official, public healthcare sources. The dataset covers both macro-level public health schemes across India and disease-specific awareness factsheets from the World Health Organization.
+
+| Source Domain | Document Category | Information Scope | Primary Target Schemes / Topics |
+|:---|:---|:---|:---|
+| 🏛️ **`myScheme.gov.in`** | Government Healthcare Schemes | Welfare guidelines, financial assistance rules, eligibility criteria, application portals | Ayushman Bharat PM-JAY, PMMVY, SUMAN, JSSK, JSY, BSKY (Odisha), Goa Mediclaim, Chiranjeevi (Rajasthan), etc. |
+| 🌐 **World Health Organization (WHO)** | Disease & Health Factsheets | Clinical symptoms, preventive care, transmission modes, vaccination schedules | Malaria, Tuberculosis, Hypertension, Diabetes, Dengue, Sepsis, Stroke, Asthma, HIV/AIDS, Hepatitis, etc. |
+
+### Metadata Enrichment & Proper Noun Extraction
+During corpus ingestion, every document chunk is enriched with structured metadata (`doc_id`, `category`, `title`, `topic`, `source_url`). In addition, an automated proper noun extraction pipeline parses title acronyms and URLs using **BM25 Inverse Document Frequency (IDF) filtering** (`IDF_THRESHOLD > 4.0`), extracting high-value scheme vocabulary (e.g. `PMMVY`, `BSKY`, `PMJAY`, `SUMAN`, `JSSK`) into a verified scheme dictionary for guardrail validation.
+
+---
+
+## ⚙️ 2-Stage Hybrid RAG Engine Implementation
+
+To achieve high retrieval precision without relying on resource-intensive Cross-Encoder reranking models, MedLink AI implements a **2-Stage Dense + Lexical Hybrid Search Architecture** with Weighted Reciprocal Rank Fusion (RRF).
+
+### 1. Stage 1A: Dense Semantic Retrieval (`BAAI/bge-m3`)
+* **Embedding Model**: `BAAI/bge-m3` (1024-dimensional dense vectors).
+* **Vector Store**: ChromaDB persistent database (`./chroma_database`).
+* **Semantic Coverage**: Captures high-level contextual similarity (e.g. mapping *"high blood pressure"* to *Hypertension*).
+
+### 2. Stage 1B: Sparse Lexical Keyword Retrieval (`BM25Okapi`)
+* **Keyword Index**: `BM25Okapi` sparse keyword engine built over Porter-stemmed document tokens (`nltk.stem.PorterStemmer`).
+* **Exact Matching**: Guarantees precise keyword matching for numerical values, scheme acronyms, and specialized terminology.
+
+### 3. Stage 2: Weighted Reciprocal Rank Fusion (RRF)
+Top-50 candidates from Dense and Sparse streams are merged into a single ranked list using Weighted RRF:
+$$\text{RRF Score}(d) = 0.85 \cdot \frac{1}{60 + r_{\text{dense}}(d)} + 0.15 \cdot \frac{1}{60 + r_{\text{sparse}}(d)}$$
+
+### 4. Distance Cutoff & Document Diversity Filtering
+* **Distance Threshold Filter (`DISTANCE_THRESHOLD = 0.39`)**: If the best retrieved chunk has a semantic vector distance $> 0.39$, the query is programmatically rejected as *Out-of-Bounds*, preventing hallucinated answers.
+* **Document Diversity Cap (`doc_counts < 3`)**: Limits returned chunks to a maximum of **3 per document**, ensuring diverse source coverage and preventing single-document monopolization.
+
+---
+
+## 🌐 Universal Multilingual Intelligence & Sampling Tuning
+
+MedLink AI features a multi-lingual RAG engine designed to handle user inputs and output responses across **11+ preset languages** (English, Hindi, Hinglish, Bengali, Tamil, Telugu, Marathi, Gujarati, Spanish, French, German) plus **any custom global language** (Japanese, Korean, Punjabi, Russian, etc.).
+
+### 1. 3-Tier Query Translation & Contextualization Cascade
+When a user asks a follow-up question or queries in a non-English language, a 3-tier cascade contextualizes and translates the input into a standalone English search query for ChromaDB retrieval:
+* **Tier 1 (Llama 3.1 70B - 8s timeout)**: Primary contextualization engine that resolves relative pronouns (*"it"*, *"this scheme"*, *"its symptoms"*) using recent conversation history.
+* **Tier 2 (Llama 3.1 8B - 10s timeout)**: Fast fallback LLM triggered if Tier 1 experiences network latency.
+* **Tier 3 (Smart Keyword Extraction)**: Non-LLM regex stop-word stripper fallback.
+
+### 2. Universal Language Normalization
+The `normalize_language_name()` helper strips UI selectbox parenthetical scripts (e.g. `"Gujarati (ગુજરાતી)"` $\rightarrow$ `"Gujarati"`), passing clean ISO language directives to Llama 3.1 70B.
+
+### 3. CJK Sampling Stabilization & Repetition Penalty
+For non-Latin script targets (Korean, Chinese, Japanese, Russian, Arabic), greedy sampling at low temperatures can cause token repetition loops (repeating `, . , . [1]`). MedLink AI resolves this by enforcing:
+* **Dynamic Minimum Temperature**: `gen_temp = max(0.3, temperature)` for non-English target languages.
+* **Frequency Penalty**: `frequency_penalty = 0.3` to penalize repetitive punctuation tokens and force fluent sentence synthesis.
