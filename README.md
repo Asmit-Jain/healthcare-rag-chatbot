@@ -136,3 +136,55 @@ MedLink AI answers questions in **11+ preset languages** (English, Hindi, Hingli
 * **Follow-up Query Understanding**: Automatically rewrites follow-up questions (like *"Who is eligible for it?"*) into complete search queries using recent conversation context.
 * **Query Translation**: Translates questions typed in regional or foreign languages into English search terms to retrieve facts from the database.
 * **Clean Text Generation**: Automatically adjusts temperature settings and adds repetition penalties (`frequency_penalty=0.3`) for languages like Korean, Chinese, or Japanese to ensure fluent, natural responses.
+
+---
+
+## 🎨 User Interface & RAG Inspector Diagnostics
+
+MedLink AI features a modern, dark-mode glassmorphic user interface built with Streamlit and custom CSS styling.
+
+* **🔍 RAG Inspector (Real-Time Diagnostics)**: Click open the `🔍 RAG Inspector` drawer below any assistant message to inspect:
+  * **Vector Semantic Distance**: View the exact cosine distance score (e.g. `0.24`) compared against the `0.39` cutoff threshold.
+  * **Retrieved Chunks & Metadata**: View the exact text snippets, source document titles, categories, doc IDs, and source URLs.
+* **Interactive Elements**:
+  * **Clickable Citation Chips**: Displays glowing source chips (`[1] WHO Factsheet`, `[2] myScheme Portal`) for easy verification.
+  * **Execution Latency Badge**: Displays real-time response generation speed (`⚡ Response Time: 1.42s`).
+
+---
+
+## 🔒 User Accounts & Session Vault (MongoDB Atlas)
+
+MedLink AI includes a full-stack user authentication system and cloud database storage.
+
+* **Secure Authentication**:
+  * Passwords are securely encrypted using **Bcrypt** hashing.
+  * User sessions are authorized using **JSON Web Tokens (JWT)**.
+  * Clean 2-column login and signup portal (`auth_ui.py`).
+* **MongoDB Atlas Cloud Persistence**:
+  * Stores user accounts, active chat sessions, and message history in the cloud (`db.py`).
+  * **Sidebar Session Control**: Users can start new chats, search past conversations, and rename, pin, or delete chat sessions.
+* **Message-Level Language Vault**:
+  * Saves the target language (`"language": target_lang_turn`) for every message turn.
+  * Ensures historical disclaimers **permanently stay in their original language** when reloading old conversations.
+
+---
+
+## 📁 Project Directory Structure
+
+```text
+Health_Awareness_Chatbot/
+│
+├── app.py                  # Streamlit Main App UI & Chat Interface
+├── generate.py             # Llama 3.1 70B/8B Translation & Response Generation
+├── retrieve.py             # 2-Stage Hybrid RAG (BGE-M3 + BM25 RRF) Search Engine
+├── db.py                   # MongoDB Atlas Persistence (Users, Sessions, Messages)
+├── auth.py                 # Security Helpers (Bcrypt Password Hashing & JWT Tokens)
+├── auth_ui.py              # User Login & Signup Form Components
+├── run_benchmark.py        # 50-Query Golden Benchmark Evaluation Suite
+│
+├── chroma_database/        # Persistent Local Vector Store (8,461 Embeddings)
+├── golden_test_set.json    # 50 Ground-Truth Test Cases for Benchmarking
+├── requirements.txt        # Python Dependencies & Libraries
+├── medlink_logo.png        # MedLink AI Logo Asset
+└── README.md               # Project Documentation
+```
