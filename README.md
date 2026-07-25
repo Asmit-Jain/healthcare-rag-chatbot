@@ -174,19 +174,35 @@ MedLink AI includes a full-stack user authentication system and cloud database s
 ```text
 Health_Awareness_Chatbot/
 │
-├── app.py                  # Streamlit Main App UI & Chat Interface
-├── generate.py             # Llama 3.1 70B/8B Translation & Response Generation
-├── retrieve.py             # 2-Stage Hybrid RAG (BGE-M3 + BM25 RRF) Search Engine
-├── db.py                   # MongoDB Atlas Persistence (Users, Sessions, Messages)
-├── auth.py                 # Security Helpers (Bcrypt Password Hashing & JWT Tokens)
-├── auth_ui.py              # User Login & Signup Form Components
-├── run_benchmark.py        # 50-Query Golden Benchmark Evaluation Suite
+├── 🚀 Core Application & RAG Pipeline
+│   ├── app.py                            # Streamlit Dashboard UI & Chat Interface
+│   ├── generate.py                       # Llama 3.1 70B/8B Translation & Response Generation
+│   ├── retrieve.py                       # 2-Stage Hybrid RAG (BGE-M3 + BM25 RRF) Search Engine
+│   ├── db.py                             # MongoDB Atlas Cloud Persistence (Users, Sessions, Messages)
+│   ├── auth.py                           # Security Helpers (Bcrypt Password Hashing & JWT Tokens)
+│   ├── auth_ui.py                        # Streamlit Authentication Forms Component
+│   └── run_benchmark.py                  # 50-Query Golden Benchmark Evaluation Suite
 │
-├── chroma_database/        # Persistent Local Vector Store (8,461 Embeddings)
-├── golden_test_set.json    # 50 Ground-Truth Test Cases for Benchmarking
-├── requirements.txt        # Python Dependencies & Libraries
-├── medlink_logo.png        # MedLink AI Logo Asset
-└── README.md               # Project Documentation
+├── 📊 Data Acquisition & Ingestion Pipelines
+│   ├── govt_data_extraction.ipynb        # Scraping myScheme.gov.in Government Scheme Portals
+│   ├── who_factsheets_data_extraction.ipynb # Scraping WHO Disease Awareness Factsheets
+│   ├── Data_Cleaning_Pipeline.ipynb      # Text Cleaning, Filtering & Normalization Pipeline
+│   ├── chunking.ipynb                    # Recursive Character Text Chunking Pipeline
+│   ├── embedding-generation.ipynb        # Dense Vector Embedding Generation Notebook
+│   └── build_database.py                 # Automated ChromaDB Vector Database Indexer Script
+│
+├── 📑 Datasets & Configuration Seeds
+│   ├── health_schemes_list.csv           # Government Scheme URL Seed List
+│   ├── who_disease_links.csv             # WHO Factsheet URL Seed List
+│   ├── golden_test_set.json              # 50 Ground-Truth Benchmark Evaluation Test Suite
+│   ├── .env.example                      # Template for Required Environment Variables
+│   ├── .gitignore                        # Git File Exclusion Rules
+│   └── requirements.txt                  # Python Dependency Specifications
+│
+└── 🖼️ Assets & Documentation
+    ├── medlink_logo.png                  # MedLink AI Logo Asset
+    ├── Healthcare_Awareness_GenAI_Assistant.pdf # Internship Problem Specification PDF
+    └── README.md                         # Project Documentation
 ```
 
 ---
@@ -258,3 +274,9 @@ MedLink AI is engineered with strict AI safety mechanisms for healthcare educati
 * **No Prescription or Dosage Guidance**: Programmatically blocks requests for drug names, medicine dosages (in mg/pills), or clinical treatment choices.
 * **Emergency Triage Warning**: For acute health emergencies, MedLink AI advises users to immediately contact local emergency services (108 in India) or consult a certified medical practitioner.
 * **Safe Fallback Response**: Out-of-scope or unverified queries return a clear, polite fallback message (*"I am sorry, but I do not have enough information in my database to answer your query."*) instead of generating false information.
+
+---
+
+## 📄 License & Credits
+* **Developer**: Asmit Jain
+* **License**: Released under the MIT License.
