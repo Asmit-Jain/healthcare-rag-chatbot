@@ -1,6 +1,6 @@
 # 📊 Data Acquisition, Cleaning & Ingestion Architecture
 
-This document details the web scraping, text cleaning, recursive chunking, and vector embedding pipelines implemented across [govt_data_extraction.ipynb](../govt_data_extraction.ipynb), [who_factsheets_data_extraction.ipynb](../who_factsheets_data_extraction.ipynb), [Data_Cleaning_Pipeline.ipynb](../Data_Cleaning_Pipeline.ipynb), [chunking.ipynb](../chunking.ipynb), and [embedding-generation.ipynb](../embedding-generation.ipynb).
+This document details the reverse-engineered API ingestion, web scraping, text cleaning, recursive chunking, and vector embedding pipelines implemented across [govt_data_extraction.ipynb](../govt_data_extraction.ipynb), [who_factsheets_data_extraction.ipynb](../who_factsheets_data_extraction.ipynb), [Data_Cleaning_Pipeline.ipynb](../Data_Cleaning_Pipeline.ipynb), [chunking.ipynb](../chunking.ipynb), and [embedding-generation.ipynb](../embedding-generation.ipynb).
 
 ---
 
@@ -10,7 +10,8 @@ This document details the web scraping, text cleaning, recursive chunking, and v
   myScheme.gov.in (288 Schemes)             WHO Factsheets (239 Factsheets)
                 │                                         │
                 ▼                                         ▼
-   govt_data_extraction.ipynb               who_factsheets_data_extraction.ipynb
+   [Reverse-Engineered REST API]             [HTML Web Scraping & DOM Traversal]
+   govt_data_extraction.ipynb                who_factsheets_data_extraction.ipynb
                 │                                         │
                 └────────────────────┬────────────────────┘
                                      │
@@ -47,21 +48,35 @@ This document details the web scraping, text cleaning, recursive chunking, and v
 
 ---
 
-## 🔍 Detailed Component Specifications
+## 🔍 Detailed Data Acquisition & Ingestion Specifications
 
-### 1. Data Acquisition (Web Scraping)
-* **Government Schemes (`myScheme.gov.in`)**:
-  Extracted 288 official welfare scheme pages across India using BeautifulSoup and Requests. Extracted structured metadata: scheme title, category, eligibility guidelines, financial assistance rules, and official application links.
-* **WHO Disease Factsheets**:
-  Extracted 239 disease and public health awareness factsheets from World Health Organization portals. Extracted clinical symptoms, transmission modes, preventive measures, and treatment overviews.
+### 1. Government Schemes Data Acquisition (`govt_data_extraction.ipynb`)
+
+Instead of standard HTML web scraping, data from official Indian Government healthcare portals (`myScheme.gov.in`) was acquired via **Reverse-Engineered Internal REST API Endpoints** identified using Developer Tools:
+
+* **API Endpoints Queried**:
+  * `getSchemeDetails`: Fetches scheme metadata, overview, detailed description (`detailedDescription_md`), benefits (`benefits_md`), eligibility criteria (`eligibilityDescription_md`), and exclusions (`exclusions_md`).
+  * `getSchemeFaqs`: Fetches official scheme FAQs (question and answer pairs).
+  * `getSchemeDocuments`: Fetches required document guidelines.
+* **Recursive JSON Parser**:
+  Implemented `extract_text_from_rich_json()` to recursively parse deeply nested JSON payload nodes and markdown structures into clean text blocks.
+* **Deep Clean & HTML Unescaping**:
+  * `deep_unescape(text)`: Recursively decodes heavily nested HTML entities (`&amp;amp;quot;`, `&#39;`, `&nbsp;`).
+  * `fix_squished_markdown(text)`: Corrects squished table headers (`****` $\rightarrow$ `** **`).
+* **Output Dataset**: Saves **288 verified scheme documents** to `govt_structured_master.json` (2.06 MB).
 
 ---
 
-### 2. Data Cleaning & Structured Master Datasets
-* **Cleaning Rules**: Removed HTML boilerplates, navigation headers, disclaimers, duplicate whitespace, and unverified web scripts.
-* **Output Artifacts**:
-  * `govt_structured_master.json`: 288 master scheme records (2.06 MB).
-  * `who_structured_master_cleaned_safe.json`: 239 master WHO factsheet records (2.32 MB).
+### 2. WHO Disease Factsheets Data Acquisition (`who_factsheets_data_extraction.ipynb`)
+
+Public health awareness factsheets were extracted from the World Health Organization (WHO) website (`www.who.int`) using **HTML Web Scraping & DOM Traversal**:
+
+* **URL Index Extraction**: Scraped the index of WHO factsheet URLs matching `/fact-sheets/detail/` and saved to `who_disease_links.csv`.
+* **DOM Traversal & Section Parsing**:
+  Used `BeautifulSoup` with `lxml` parser to extract `<h1>` disease titles and sibling `<h2>` section headings. Explicitly preserved list items (`<ul>`, `<ol>`) formatted with bullet prefixes (`- list item`).
+* **Noise & Reference Filtering**: Automatically skipped irrelevant non-content sections (`WHO response`, `References`, `Database`, `Related health topics`, `Further reading`).
+* **Citation Cleanup**: Removed WHO web citation numbers `(1)`, `(2,3)`.
+* **Output Dataset**: Saves **239 verified WHO disease factsheets** to `who_structured_master_cleaned_safe.json` (2.32 MB).
 
 ---
 
