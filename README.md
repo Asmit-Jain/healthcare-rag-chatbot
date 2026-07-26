@@ -212,6 +212,11 @@ Health_Awareness_Chatbot/
 │   └── requirements.txt                  # Python Dependency Specifications
 │
 └── 🖼️ Assets & Documentation
+    ├── docs/                             # Technical Architecture Documentation Suite
+    │   ├── 01_data_collection_and_ingestion.md   # Data Scraping, Cleaning, Chunking & BGE-M3 Embeddings
+    │   ├── 02_retrieval_architecture.md          # 2-Stage Hybrid Dense+Sparse RRF Search & Thresholds
+    │   ├── 03_generation_and_multilingual.md     # Llama 3.1 70B Synthesis, 3-Tier Translation & CJK Controls
+    │   └── 04_safety_auth_and_persistence.md     # Medical Guardrails, Bcrypt/JWT Auth & MongoDB Atlas Vault
     ├── screenshots/                      # Application UI Screenshots (Dashboard, Diagnostics, Multilingual)
     ├── medlink_logo.png                  # MedLink AI Logo Asset
     ├── Healthcare_Awareness_GenAI_Assistant.pdf # Internship Problem Specification PDF
