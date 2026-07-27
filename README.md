@@ -9,7 +9,13 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
+  <a href="https://medlink-ai.streamlit.app/" target="_blank">
+    <img src="https://img.shields.io/badge/%F0%9F%9A%80_LIVE_DEMO-medlink--ai.streamlit.app-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white" alt="Live Demo">
+  </a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/Streamlit-1.33%2B-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white" alt="Streamlit">
   <img src="https://img.shields.io/badge/ChromaDB-VectorDB-000000?style=for-the-badge&logo=databricks&logoColor=white" alt="ChromaDB">
   <img src="https://img.shields.io/badge/Embeddings-BAAI%2Fbge--m3-blueviolet?style=for-the-badge" alt="BGE-M3">
