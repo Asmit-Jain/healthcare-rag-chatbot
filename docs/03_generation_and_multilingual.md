@@ -67,9 +67,9 @@ This document details the generation, multilingual processing, and citation synt
 
 ## 🔍 Detailed Component Specifications
 
-### 1. Dual NVIDIA NIM LLM Model Endpoints
-* **Primary Synthesis & Tier 1 Translation Model**: `meta/llama-3.1-70b-instruct`
-* **Tier 2 Handoff Model**: `meta/llama-3.1-8b-instruct`
+### 1. Dual Groq LPU API Model Endpoints
+* **Primary Synthesis Model**: `llama-3.3-70b-versatile`
+* **Fast Translation Model**: `llama-3.1-8b-instant`
 
 ---
 

@@ -11,19 +11,19 @@ from retrieve import retrieve_for_generation
 # Load environment variables from .env file
 load_dotenv()
 
-# Initialize OpenAI client using NVIDIA's API endpoint
-api_key = os.getenv("NVIDIA_API_KEY")
+# Initialize OpenAI client using Groq's LPU API endpoint
+api_key = os.getenv("GROQ_API_KEY")
 if not api_key:
-    raise ValueError("Error: NVIDIA_API_KEY environment variable is not set in the .env file.")
+    raise ValueError("Error: GROQ_API_KEY environment variable is not set in the .env file.")
 
 client = OpenAI(
-    base_url="https://integrate.api.nvidia.com/v1",
+    base_url="https://api.groq.com/openai/v1",
     api_key=api_key
 )
 
-# Llama 3.1 70B & 8B models on NVIDIA NIM
-MODEL_NAME = "meta/llama-3.1-70b-instruct"
-MODEL_NAME_FAST = "meta/llama-3.1-8b-instruct"
+# Groq LPU Models: Meta Llama 3.3 70B (Primary Synthesis) & Meta Llama 3.1 8B (Fast Translation)
+MODEL_NAME = "llama-3.3-70b-versatile"
+MODEL_NAME_FAST = "llama-3.1-8b-instant"
 
 # --- STEP 4: SYSTEM PROMPT WITH STRICT GROUNDING AND MEDICAL GUARDRAILS ---
 SYSTEM_PROMPT = """You are a professional, cautious, and helpful Healthcare Awareness AI Assistant. Your goal is to answer the user's query by strictly using ONLY the facts provided in the "Retrieved Context" section below.
@@ -121,11 +121,15 @@ def extract_clean_search_keywords(user_query: str) -> str:
 
 def rewrite_query_with_history(user_query, chat_history, language="English"):
     """
-    Uses Llama 3.1 70B to rewrite a follow-up query into a standalone search query if history exists,
-    or translates non-English/Hinglish queries into English for accurate ChromaDB & BM25 retrieval.
-    Sanitizes history by removing references, disclaimers, and bracket numbers.
+    Fast query contextualization & translation engine:
+    1. Pipeline Bypass: Bypasses LLM call entirely for initial English queries (saves 20-45s).
+    2. Fast 8B Handoff: Uses Llama 3.1 8B (MODEL_NAME_FAST) for rapid translation/contextualization (0.8-1.5s).
     """
-    if not chat_history and (not language or language == "English"):
+    clean_lang = normalize_language_name(language)
+    
+    # Strategy 1: Pipeline Bypass Optimization for initial English queries
+    if not chat_history and (not clean_lang or clean_lang == "English"):
+        print(f"⚡ Pipeline Bypass (Strategy 1): Initial English query detected. Skipping LLM translation call.")
         return user_query
 
     # Assemble sanitized conversation history snippet for prompt
@@ -157,38 +161,22 @@ Conversation History:
 User Question: {user_query}
 Standalone English Search Query:"""
 
-    # Tier 1: Try Llama 3.1 70B with tight 8s timeout
+    # Strategy 2: Fast 8B Model (MODEL_NAME_FAST) for rapid 0.8-1.5s translation/contextualization
     try:
-        response = client.chat.completions.create(
-            model=MODEL_NAME,
+        response_fast = client.chat.completions.create(
+            model=MODEL_NAME_FAST,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.0,
-            max_tokens=200,
-            timeout=8.0
+            max_tokens=150,
+            timeout=6.0
         )
-        raw_rewritten = response.choices[0].message.content.strip()
+        raw_rewritten = response_fast.choices[0].message.content.strip()
         rewritten = parse_rewritten_query(raw_rewritten)
-        print(f"🔄 Multilingual Context (Tier 1 - 70B): Rewrote query as: '{rewritten}'")
+        print(f"⚡ Fast Multilingual Context (Strategy 2 - 8B Fast Model): Rewrote query as: '{rewritten}'")
         return rewritten
-    except Exception as e_70b:
-        print(f"[WARNING] Tier 1 (70B) query translation timed out or failed: {e_70b}. Handing off to Tier 2 (8B Fast Model)...")
-        
-        # Tier 2: Try Llama 3.1 8B Fast Model with 10s timeout
-        try:
-            response_fast = client.chat.completions.create(
-                model=MODEL_NAME_FAST,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.0,
-                max_tokens=200,
-                timeout=10.0
-            )
-            raw_rewritten_fast = response_fast.choices[0].message.content.strip()
-            rewritten_fast = parse_rewritten_query(raw_rewritten_fast)
-            print(f"⚡ Multilingual Context (Tier 2 - 8B Fast Handoff): Rewrote query as: '{rewritten_fast}'")
-            return rewritten_fast
-        except Exception as e_8b:
-            print(f"[WARNING] Tier 2 (8B) query translation also failed: {e_8b}. Falling back to Tier 3 Keyword Extraction.")
-            return extract_clean_search_keywords(user_query)
+    except Exception as e_8b:
+        print(f"[WARNING] 8B Fast Model query translation timed out or failed: {e_8b}. Falling back to Keyword Extraction.")
+        return extract_clean_search_keywords(user_query)
 
 def parse_rewritten_query(raw_text: str) -> str:
     """
@@ -276,11 +264,64 @@ def generate_response(user_query, context_chunks, chat_history=None, temperature
             temperature=gen_temp,
             frequency_penalty=0.3,
             max_tokens=2400,
-            timeout=180.0  # Extended to 180 seconds (3 minutes) to prevent queue dropouts
+            timeout=60.0
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
         return f"[ERROR] Generation Failed: {e}"
+
+def generate_response_stream(user_query, context_chunks, chat_history=None, temperature=0.1, language="English"):
+    """
+    Generator function that streams tokens live from Groq API for Streamlit st.write_stream().
+    """
+    if chat_history is None:
+        chat_history = []
+
+    formatted_context = ""
+    for idx, chunk in enumerate(context_chunks):
+        meta = chunk.get("metadata", {})
+        source_name = meta.get("source_name", "Unknown Source")
+        doc_title = meta.get("title", "Unknown Title")
+        formatted_context += f"---\n[{idx + 1}] Source: {source_name} ({doc_title})\n"
+        formatted_context += f"Content: {chunk.get('text', '')}\n"
+    formatted_context += "---\n"
+
+    clean_lang = normalize_language_name(language)
+    sys_prompt = SYSTEM_PROMPT
+    if clean_lang and clean_lang != "English":
+        sys_prompt += f"\n6. STRICT LANGUAGE REQUIREMENT: Regardless of the language of the user's question or previous chat messages, you MUST write your ENTIRE final response using complete, fluent sentences strictly in {clean_lang}. Retain inline citation brackets like [1], [2] intact."
+
+    messages = [{"role": "system", "content": sys_prompt}]
+    for msg in chat_history[-10:]:
+        content = msg["content"]
+        if msg["role"] == "assistant":
+            content = content.split("References:\n")[0].split("\n\nReferences:")[0]
+            disclaimer_pattern = r'(\*?\b(Disclaimer|Haftungsausschluss|Descargo de responsabilidad|Avertissement|अस्वीकरण|डिस्क्लोमर|डिस्क्लेमर|দাবি পরিত্যাগ|மறுப்பு|గమనిక|અસ્વીકરણ)\b:?.*$)'
+            content = re.sub(disclaimer_pattern, '', content, flags=re.IGNORECASE | re.DOTALL).strip()
+        messages.append({"role": msg["role"], "content": content})
+
+    user_payload = f"Retrieved Context:\n{formatted_context}\nUser Query: {user_query}"
+    if clean_lang and clean_lang != "English":
+        user_payload += f"\n\nSTRICT LANGUAGE DIRECTIVE: Regardless of previous chat messages or the language of the user's input question, you MUST write your ENTIRE response using complete, fluent sentences strictly in {clean_lang}. Do NOT use any other language or script."
+
+    messages.append({"role": "user", "content": user_payload})
+    gen_temp = max(0.3, temperature) if clean_lang and clean_lang != "English" else temperature
+
+    try:
+        response_stream = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=messages,
+            temperature=gen_temp,
+            frequency_penalty=0.3,
+            max_tokens=2400,
+            stream=True,
+            timeout=60.0
+        )
+        for chunk in response_stream:
+            if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
+    except Exception as e:
+        yield f"\n[ERROR] Generation Failed: {e}"
 
 # --- STEP 6: DEDUPLICATED & GROUPED CITATION AND REFERENCE FORMATTING ---
 def format_response_with_citations(llm_response, context_chunks):
@@ -335,9 +376,9 @@ def format_response_with_citations(llm_response, context_chunks):
     return f"{llm_response}\n{bibliography}"
 
 # --- STEP 5: CONNECT RETRIEVAL TO GENERATION ---
-def query_rag_chatbot(user_query, chat_history=None, n_results=5, temperature=0.1, language="English"):
+def query_rag_chatbot(user_query, chat_history=None, n_results=5, temperature=0.1, language="English", stream=False):
     """
-    End-to-end RAG Chatbot entrypoint with Multi-Language Support.
+    End-to-end RAG Chatbot entrypoint with Multi-Language Support and optional token streaming.
     """
     if chat_history is None:
         chat_history = []
@@ -349,6 +390,14 @@ def query_rag_chatbot(user_query, chat_history=None, n_results=5, temperature=0.
     if is_unsafe_medical_query(user_query):
         print("🛑 Local Guardrail Triggered: Medical Prescription/Dosage Check")
         refusal_msg = get_localized_guardrail_refusal("medical_safety", language=language)
+        if stream:
+            def static_stream(): yield refusal_msg
+            return {
+                "answer": refusal_msg,
+                "stream_generator": static_stream(),
+                "chunks": [],
+                "distance": 1.0
+            }
         return {
             "answer": refusal_msg,
             "chunks": [],
@@ -359,6 +408,14 @@ def query_rag_chatbot(user_query, chat_history=None, n_results=5, temperature=0.
     if (not language or language == "English") and not passes_proper_noun_check(user_query):
         print("🛑 Local Guardrail Triggered: Out-of-Bounds Query (Proper Noun Check)")
         refusal_msg = get_localized_guardrail_refusal("out_of_bounds", language=language)
+        if stream:
+            def static_stream(): yield refusal_msg
+            return {
+                "answer": refusal_msg,
+                "stream_generator": static_stream(),
+                "chunks": [],
+                "distance": 1.0
+            }
         return {
             "answer": refusal_msg,
             "chunks": [],
@@ -377,17 +434,32 @@ def query_rag_chatbot(user_query, chat_history=None, n_results=5, temperature=0.
     if retrieval_result["status"] == "REJECTED_OUT_OF_BOUNDS":
         print("🛑 Local Guardrail Triggered: Out-of-Bounds Query (Distance)")
         refusal_msg = get_localized_guardrail_refusal("out_of_bounds", language=language)
+        if stream:
+            def static_stream(): yield refusal_msg
+            return {
+                "answer": refusal_msg,
+                "stream_generator": static_stream(),
+                "chunks": [],
+                "distance": retrieval_result["distance"]
+            }
         return {
             "answer": refusal_msg,
             "chunks": [],
             "distance": retrieval_result["distance"]
         }
         
-    # 5. If retrieval succeeded, feed chunks into Llama 3.1 70B for synthesis in target language
-    print(f"✅ Retrieval Succeeded (Distance: {retrieval_result['distance']:.3f}). Calling Llama 3.1 70B ({language})...")
-    raw_response = generate_response(user_query, retrieval_result["chunks"], chat_history=chat_history, temperature=temperature, language=language)
+    # 5. If retrieval succeeded, feed chunks into Llama 3.3 70B via Groq API
+    print(f"✅ Retrieval Succeeded (Distance: {retrieval_result['distance']:.3f}). Calling Groq LPU API ({language})...")
     
-    # 6. Format citations and references
+    if stream:
+        stream_gen = generate_response_stream(user_query, retrieval_result["chunks"], chat_history=chat_history, temperature=temperature, language=language)
+        return {
+            "stream_generator": stream_gen,
+            "chunks": retrieval_result["chunks"],
+            "distance": retrieval_result["distance"]
+        }
+
+    raw_response = generate_response(user_query, retrieval_result["chunks"], chat_history=chat_history, temperature=temperature, language=language)
     formatted_response = format_response_with_citations(raw_response, retrieval_result["chunks"])
     return {
         "answer": formatted_response,

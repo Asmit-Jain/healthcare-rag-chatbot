@@ -19,7 +19,7 @@
   <img src="https://img.shields.io/badge/Streamlit-1.33%2B-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white" alt="Streamlit">
   <img src="https://img.shields.io/badge/ChromaDB-VectorDB-000000?style=for-the-badge&logo=databricks&logoColor=white" alt="ChromaDB">
   <img src="https://img.shields.io/badge/Embeddings-BAAI%2Fbge--m3-blueviolet?style=for-the-badge" alt="BGE-M3">
-  <img src="https://img.shields.io/badge/LLM-Llama_3.1_70B-76B900?style=for-the-badge&logo=nvidia&logoColor=white" alt="NVIDIA NIM">
+  <img src="https://img.shields.io/badge/LLM-Llama_3.3_70B-f55036?style=for-the-badge&logo=groq&logoColor=white" alt="Groq LPU API">
   <img src="https://img.shields.io/badge/MongoDB-Atlas_Vault-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB">
   <img src="https://img.shields.io/badge/Guardrails-100%25_Verified-success?style=for-the-badge" alt="Guardrail Safety">
   <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="License">
@@ -29,7 +29,7 @@
 
 ## 📌 Executive Summary
 
-**MedLink AI** is an advanced, production-grade Generative AI Healthcare Assistant built to provide reliable, source-grounded public health education and government healthcare scheme navigation across India. Powered by a **2-Stage Hybrid Dense (BGE-M3) + Lexical (BM25) Reciprocal Rank Fusion (RRF)** retrieval pipeline and **Llama 3.1 70B**, MedLink AI synthesizes accurate, factual responses strictly from official government health portals (`myScheme.gov.in`) and World Health Organization (WHO) factsheets.
+**MedLink AI** is an advanced, production-grade Generative AI Healthcare Assistant built to provide reliable, source-grounded public health education and government healthcare scheme navigation across India. Powered by a **2-Stage Hybrid Dense (BGE-M3) + Lexical (BM25) Reciprocal Rank Fusion (RRF)** retrieval pipeline and **Llama 3.3 70B**, MedLink AI synthesizes accurate, factual responses strictly from official government health portals (`myScheme.gov.in`) and World Health Organization (WHO) factsheets.
 
 > [!IMPORTANT]  
 > **Strict Non-Diagnostic Mission Statement**:  
@@ -245,8 +245,8 @@ pip install -r requirements.txt
 ### 2. Configure Environment Variables (`.env`)
 Create a `.env` file in the root directory:
 ```env
-# Required: Llama 3.1 LLM generation via NVIDIA NIM API
-NVIDIA_API_KEY=your_nvidia_api_key_here
+# Required: Llama 3.3 LLM generation via Groq LPU API
+GROQ_API_KEY=gsk_your_groq_api_key_here
 
 # Required: MongoDB Atlas cloud URI for session & message storage
 MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/

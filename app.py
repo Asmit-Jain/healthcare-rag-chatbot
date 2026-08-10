@@ -24,12 +24,12 @@ def get_chromadb_status():
     except Exception:
         return False
 
-def get_nvidia_status():
-    api_key = os.getenv("NVIDIA_API_KEY")
+def get_groq_status():
+    api_key = os.getenv("GROQ_API_KEY")
     return api_key is not None and len(api_key.strip()) > 0
 
 db_active = get_chromadb_status()
-nvidia_active = get_nvidia_status()
+groq_active = get_groq_status()
 mongo_active = check_mongo_connection()
 
 # --- STEP 1: PAGE CONFIGURATION ---
@@ -382,8 +382,8 @@ with st.sidebar:
     embedder_badge = '<span class="status-badge-green"></span>' if db_active else '<span class="status-badge-red"></span>'
     embedder_text = '<span style="color:#10b981;">Active</span>' if db_active else '<span style="color:#ef4444;">Inactive</span>'
     
-    api_badge = '<span class="status-badge-green"></span>' if nvidia_active else '<span class="status-badge-red"></span>'
-    api_text = '<span style="color:#10b981;">Active</span>' if nvidia_active else '<span style="color:#ef4444;">API Key Missing</span>'
+    api_badge = '<span class="status-badge-green"></span>' if groq_active else '<span class="status-badge-red"></span>'
+    api_text = '<span style="color:#10b981;">Active</span>' if groq_active else '<span style="color:#ef4444;">API Key Missing</span>'
     
     mongo_badge = '<span class="status-badge-green"></span>' if mongo_active else '<span class="status-badge-red"></span>'
     mongo_text = '<span style="color:#10b981;">Connected</span>' if mongo_active else '<span style="color:#ef4444;">Offline</span>'
@@ -392,7 +392,7 @@ with st.sidebar:
         f'<div class="diagnostics-text">'
         f'{db_badge} ChromaDB: {db_text}<br>'
         f'{embedder_badge} BGE-M3 Embedder: {embedder_text}<br>'
-        f'{api_badge} Llama 3.1 NIM API: {api_text}<br>'
+        f'{api_badge} Groq LPU API: {api_text}<br>'
         f'{mongo_badge} MongoDB Atlas: {mongo_text}'
         '</div>',
         unsafe_allow_html=True
@@ -676,38 +676,42 @@ if user_query:
     if st.session_state.active_session_id and mongo_active:
         append_message_to_session(st.session_state.active_session_id, "user", user_query)
     
-    # 2. Call backend RAG pipeline inside a loading spinner with timer
+    # 2. Call backend RAG pipeline with live streaming and timer
     with st.chat_message("assistant"):
-        with st.spinner(f"Searching verified database and calling Llama 3.1 ({target_lang_turn})..."):
-            import time
-            start_time = time.time()
-            result = query_rag_chatbot(
-                user_query=user_query,
-                chat_history=st.session_state.chat_history,
-                n_results=n_results,
-                temperature=temperature,
-                language=target_lang_turn
-            )
-            exec_time = time.time() - start_time
-            answer = result["answer"]
+        import time
+        start_time = time.time()
+        
+        result = query_rag_chatbot(
+            user_query=user_query,
+            chat_history=st.session_state.chat_history,
+            n_results=n_results,
+            temperature=temperature,
+            language=target_lang_turn,
+            stream=True
+        )
+        
+        if "stream_generator" in result:
+            raw_answer = st.write_stream(result["stream_generator"])
+        else:
+            raw_answer = result.get("answer", "")
+            st.markdown(raw_answer)
             
-            # Clean plain-text references and disclaimers before displaying
-            clean_answer = answer
-            if "\n\nReferences:" in clean_answer:
-                clean_answer = clean_answer.split("\n\nReferences:")[0].strip()
-            if "References:\n" in clean_answer:
-                clean_answer = clean_answer.split("References:\n")[0].strip()
-            
-            disclaimer_pattern = r'(\*?\b(Disclaimer|Haftungsausschluss|Descargo de responsabilidad|Avertissement|अस्वीकरण|डिस्क्लोमर|डिस्क्लेमर|দাবি পরিত্যাগ|மறுப்பு|గమనిక|અસ્વીકરણ)\b:?.*$)'
-            clean_answer = re.sub(disclaimer_pattern, '', clean_answer, flags=re.IGNORECASE | re.DOTALL).strip()
-            
-            # Only append disclaimer if response is a valid answer (not an error, timeout, or guardrail refusal)
-            if not clean_answer.startswith("⚠️") and not clean_answer.startswith("[ERROR]"):
-                disclaimer_text = get_disclaimer_for_language(target_lang_turn)
-                clean_answer += f"\n\n*{disclaimer_text}*"
-
-            st.markdown(clean_answer)
-            st.caption(f"⚡ Response Time: `{exec_time:.2f}s`")
+        exec_time = time.time() - start_time
+        
+        # Append citations & references
+        from generate import format_response_with_citations
+        formatted_answer = format_response_with_citations(raw_answer, result["chunks"])
+        
+        # Append localized disclaimer
+        disclaimer_pattern = r'(\*?\b(Disclaimer|Haftungsausschluss|Descargo de responsabilidad|Avertissement|अस्वीकरण|डिस्क्लोमर|डिस्क्लेमर|দাবি পরিত্যাগ|மறுப்பு|గమనిక|અસ્વીકરણ)\b:?.*$)'
+        clean_check = re.sub(disclaimer_pattern, '', raw_answer, flags=re.IGNORECASE | re.DOTALL).strip()
+        if not clean_check.startswith("⚠️") and not clean_check.startswith("[ERROR]"):
+            disclaimer_text = get_disclaimer_for_language(target_lang_turn)
+            if disclaimer_text not in formatted_answer:
+                formatted_answer += f"\n\n*{disclaimer_text}*"
+        
+        answer = formatted_answer
+        st.caption(f"⚡ Response Time: `{exec_time:.2f}s`")
             
     # 3. Append assistant response and metadata to session state
     st.session_state.messages.append({
