@@ -220,6 +220,44 @@ def generate_response(user_query, context_chunks, chat_history=None, temperature
         formatted_context += f"Content: {chunk.get('text', '')}\n"
     formatted_context += "---\n"
 
+def get_universal_language_directive(clean_lang):
+    """
+    Returns a generalized, universal language script directive applicable to all 100+ world languages.
+    """
+    if not clean_lang or clean_lang == "English":
+        return ""
+    
+    if "Hinglish" in clean_lang:
+        return (
+            f"\n\nSTRICT LANGUAGE DIRECTIVE: You MUST write your ENTIRE response in Hinglish "
+            f"(Hindi language written using the Roman/Latin alphabet, e.g., 'Yeh bimari machhar ke katne se hoti hai'). "
+            f"Do NOT use Devanagari script (हिंदी) or English translation."
+        )
+    else:
+        return (
+            f"\n\nSTRICT LANGUAGE DIRECTIVE: Regardless of previous chat messages or the language of the user's input question, "
+            f"you MUST write your ENTIRE final response strictly in {clean_lang} using its native primary script and writing system "
+            f"(e.g., native Kanji/Hiragana for Japanese, Hangul for Korean, Devanagari for Hindi/Marathi, etc.). "
+            f"Do NOT use Romanized/Latin transliteration (such as Romaji or Romaja) unless Latin script is native to {clean_lang}."
+        )
+
+# --- STEP 5: CONNECT RETRIEVAL TO GENERATION ---
+def generate_response(user_query, context_chunks, chat_history=None, temperature=0.1, language="English"):
+    """
+    Generates a grounded answer from retrieved context using Llama 3.3 70B via Groq API.
+    """
+    if chat_history is None:
+        chat_history = []
+
+    formatted_context = ""
+    for idx, chunk in enumerate(context_chunks):
+        meta = chunk.get("metadata", {})
+        source_name = meta.get("source_name", "Unknown Source")
+        doc_title = meta.get("title", "Unknown Title")
+        formatted_context += f"---\n[{idx + 1}] Source: {source_name} ({doc_title})\n"
+        formatted_context += f"Content: {chunk.get('text', '')}\n"
+    formatted_context += "---\n"
+
     # Normalize language string to prevent model confusion
     clean_lang = normalize_language_name(language)
 
@@ -235,7 +273,6 @@ def generate_response(user_query, context_chunks, chat_history=None, temperature
     for msg in chat_history[-10:]:
         content = msg["content"]
         if msg["role"] == "assistant":
-            # Strip references, disclaimers across all languages, and bracket numbers to save prompt tokens
             content = content.split("References:\n")[0].split("\n\nReferences:")[0]
             disclaimer_pattern = r'(\*?\b(Disclaimer|Haftungsausschluss|Descargo de responsabilidad|Avertissement|अस्वीकरण|डिस्क्लोमर|डिस्क्लेमर|দাবি পরিত্যাগ|மறுப்பு|గమనిక|અસ્વીકરણ)\b:?.*$)'
             content = re.sub(disclaimer_pattern, '', content, flags=re.IGNORECASE | re.DOTALL).strip()
@@ -245,8 +282,7 @@ def generate_response(user_query, context_chunks, chat_history=None, temperature
         })
 
     user_payload = f"Retrieved Context:\n{formatted_context}\nUser Query: {user_query}"
-    if clean_lang and clean_lang != "English":
-        user_payload += f"\n\nSTRICT LANGUAGE DIRECTIVE: Regardless of previous chat messages or the language of the user's input question, you MUST write your ENTIRE response using complete, fluent sentences strictly in {clean_lang}. Do NOT use any other language or script."
+    user_payload += get_universal_language_directive(clean_lang)
 
     # Append current turn user query along with retrieved context
     messages.append({
@@ -255,14 +291,14 @@ def generate_response(user_query, context_chunks, chat_history=None, temperature
     })
 
     try:
-        # Prevent token repetition loops in non-Latin scripts (Korean, Chinese, Japanese) by enforcing min temperature 0.3 & frequency penalty
         gen_temp = max(0.3, temperature) if clean_lang and clean_lang != "English" else temperature
 
         response = client.chat.completions.create(
             model=MODEL_NAME,
             messages=messages,
             temperature=gen_temp,
-            frequency_penalty=0.3,
+            frequency_penalty=0.5,
+            presence_penalty=0.3,
             max_tokens=2400,
             timeout=60.0
         )
@@ -301,8 +337,7 @@ def generate_response_stream(user_query, context_chunks, chat_history=None, temp
         messages.append({"role": msg["role"], "content": content})
 
     user_payload = f"Retrieved Context:\n{formatted_context}\nUser Query: {user_query}"
-    if clean_lang and clean_lang != "English":
-        user_payload += f"\n\nSTRICT LANGUAGE DIRECTIVE: Regardless of previous chat messages or the language of the user's input question, you MUST write your ENTIRE response using complete, fluent sentences strictly in {clean_lang}. Do NOT use any other language or script."
+    user_payload += get_universal_language_directive(clean_lang)
 
     messages.append({"role": "user", "content": user_payload})
     gen_temp = max(0.3, temperature) if clean_lang and clean_lang != "English" else temperature
@@ -312,7 +347,8 @@ def generate_response_stream(user_query, context_chunks, chat_history=None, temp
             model=MODEL_NAME,
             messages=messages,
             temperature=gen_temp,
-            frequency_penalty=0.3,
+            frequency_penalty=0.5,
+            presence_penalty=0.3,
             max_tokens=2400,
             stream=True,
             timeout=60.0
