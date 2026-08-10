@@ -280,7 +280,7 @@ disclaimer_html = """
 """
 st.markdown(disclaimer_html, unsafe_allow_html=True)
 
-current_user_id = st.session_state.authenticated_user.get("email")
+current_user_id = st.session_state.authenticated_user.get("email") if st.session_state.authenticated_user else ""
 
 # --- STEP 2: SIDEBAR IMPLEMENTATION ---
 with st.sidebar:
@@ -368,58 +368,6 @@ with st.sidebar:
         st.caption("⚠️ MongoDB Offline - History Disabled")
         
     st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
-    
-    st.markdown("### ⚙️ Developer Control Panel")
-    st.markdown("Configure hyperparameters and inspect live connection diagnostics.")
-    st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
-    
-    # 1. Live Connection Status badges
-    st.markdown("**🔌 Live Diagnostics**")
-    
-    db_badge = '<span class="status-badge-green"></span>' if db_active else '<span class="status-badge-red"></span>'
-    db_text = '<span style="color:#10b981;">Connected</span>' if db_active else '<span style="color:#ef4444;">Offline</span>'
-    
-    embedder_badge = '<span class="status-badge-green"></span>' if db_active else '<span class="status-badge-red"></span>'
-    embedder_text = '<span style="color:#10b981;">Active</span>' if db_active else '<span style="color:#ef4444;">Inactive</span>'
-    
-    api_badge = '<span class="status-badge-green"></span>' if groq_active else '<span class="status-badge-red"></span>'
-    api_text = '<span style="color:#10b981;">Active</span>' if groq_active else '<span style="color:#ef4444;">API Key Missing</span>'
-    
-    mongo_badge = '<span class="status-badge-green"></span>' if mongo_active else '<span class="status-badge-red"></span>'
-    mongo_text = '<span style="color:#10b981;">Connected</span>' if mongo_active else '<span style="color:#ef4444;">Offline</span>'
-    
-    st.markdown(
-        f'<div class="diagnostics-text">'
-        f'{db_badge} ChromaDB: {db_text}<br>'
-        f'{embedder_badge} BGE-M3 Embedder: {embedder_text}<br>'
-        f'{api_badge} Groq LPU API: {api_text}<br>'
-        f'{mongo_badge} MongoDB Atlas: {mongo_text}'
-        '</div>',
-        unsafe_allow_html=True
-    )
-    
-    st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
-    
-    # 2. Dynamic sliders for RAG parameters
-    st.markdown("**🛠️ Parameters**")
-    n_results = st.slider(
-        "Retrieve Count (n_results)",
-        min_value=1,
-        max_value=10,
-        value=5,
-        help="Capping database context size dynamically."
-    )
-    
-    temperature = st.slider(
-        "Temperature",
-        min_value=0.0,
-        max_value=1.0,
-        value=0.2,
-        step=0.05,
-        help="Low values ensure grounding and eliminate hallucinations."
-    )
-    
-    st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
     if st.button("🚪 Log Out", use_container_width=True):
         st.session_state.authenticated_user = None
         st.session_state.auth_token = None
@@ -428,6 +376,10 @@ with st.sidebar:
         st.session_state.chat_history = []
         st.session_state.suggestion_clicked = None
         st.rerun()
+
+# Optimal Fixed RAG Hyperparameters
+n_results = 5
+temperature = 0.1
 
 def get_disclaimer_for_language(lang):
     """
@@ -507,19 +459,8 @@ for msg_idx, message in enumerate(st.session_state.messages):
             
         st.markdown(display_content)
         
-        # Step 5: Render Citations, Response Time, and RAG Inspector under assistant response
+        # Step 5: Render Citations under assistant response
         if message["role"] == "assistant":
-            # Render Response Time latency badge if recorded
-            exec_time = message.get("execution_time")
-            if exec_time:
-                latency_html = (
-                    f'<div style="display:inline-flex; align-items:center; gap:6px; background:rgba(16, 185, 129, 0.08); '
-                    f'border:1px solid rgba(16, 185, 129, 0.25); border-radius:12px; padding:3px 10px; font-size:0.78rem; '
-                    f'color:#10b981; margin-top:6px; margin-bottom:4px;">'
-                    f'⚡ Response Time: <strong>{exec_time:.2f}s</strong>'
-                    f'</div>'
-                )
-                st.markdown(latency_html, unsafe_allow_html=True)
             # 1. Parse and render Clickable Citation Links
             if "chunks" in message and message["chunks"]:
                 import re
@@ -553,19 +494,7 @@ for msg_idx, message in enumerate(st.session_state.messages):
                     chips_html += '</div>'
                     st.markdown(chips_html, unsafe_allow_html=True)
             
-            # 2. Render RAG Inspector diagnostics
-            if "chunks" in message and message["chunks"]:
-                st.markdown("<br>", unsafe_allow_html=True)
-                with st.expander("🔍 RAG Inspector - Retrieval Diagnostics"):
-                    st.markdown(f"**Best Semantic Distance:** `{message.get('distance', 1.0):.3f}` (Refusal Threshold: `0.39`)")
-                    st.markdown("---")
-                    for idx, chunk in enumerate(message["chunks"]):
-                        meta = chunk["metadata"]
-                        st.markdown(f"**Matched Chunk {idx+1}:** `{chunk['id']}`")
-                        st.markdown(f"- **Document:** {meta.get('title')}")
-                        st.markdown(f"- **Section:** {meta.get('section', 'N/A')}")
-                        st.markdown(f"- **Source Directory:** {meta.get('source_name', 'N/A')}")
-                        st.text_area(f"Raw Text Content (Chunk {idx+1})", value=chunk["text"], height=120, disabled=True, key=f"raw_text_{msg_idx}_{chunk['id']}_{idx}")
+
 
 # --- STEP 3: CLICKABLE SUGGESTION CARDS (COLD START) ---
 # We only display suggestions if the chat hasn't started yet
@@ -711,7 +640,6 @@ if user_query:
                 formatted_answer += f"\n\n*{disclaimer_text}*"
         
         answer = formatted_answer
-        st.caption(f"⚡ Response Time: `{exec_time:.2f}s`")
             
     # 3. Append assistant response and metadata to session state
     st.session_state.messages.append({

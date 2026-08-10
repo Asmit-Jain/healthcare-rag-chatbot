@@ -135,7 +135,7 @@ def render_auth_card():
         left_html = (
             '<div class="auth-left-container">'
             '<div class="auth-title">Welcome to MedLink AI</div>'
-            '<div class="auth-subtitle">An intelligent, grounded healthcare awareness platform powered by Llama 3.1 70B & ChromaDB RAG.</div>'
+            '<div class="auth-subtitle">An intelligent, grounded public health awareness & government healthcare scheme platform.</div>'
             
             '<div class="feature-card">'
             '<div class="feature-icon">🌐</div>'
@@ -157,7 +157,7 @@ def render_auth_card():
             '<div><div class="feature-title">Private & Persistent Sessions</div><div class="feature-desc">Secure JWT account isolation with saved conversation history and 1-click pinned chats.</div></div>'
             '</div>'
             
-            '<div class="trust-badge"><span class="status-badge-green"></span> Live System: 8,461 Verified Health Policy Chunks Indexed</div>'
+            '<div class="trust-badge"><span class="status-badge-green"></span> Verified Public Health & Government Healthcare Policy Platform</div>'
             '</div>'
         )
         st.markdown(left_html, unsafe_allow_html=True)
