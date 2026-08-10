@@ -64,24 +64,24 @@ This document provides a comprehensive technical reference for the **2-Stage Hyb
                                  └─────────────┬─────────────┘
                                                │
                                                ▼
-                                 ┌───────────────────────────┐
-                                 │ 6. Distance Cutoff Check  │
-                                 │ (DISTANCE_THRESHOLD = 0.39)│
-                                 └─────────────┬─────────────┘
-                                               │
-                                       [Distance <= 0.39]
-                                               │
-                                               ▼
-                                 ┌───────────────────────────┐
-                                 │ 7. Document Diversity Cap │
-                                 │  (Max 3 Chunks / Document)│
-                                 └─────────────┬─────────────┘
-                                               │
-                                               ▼
+                                  ┌───────────────────────────┐
+                                  │ 6. Distance Cutoff Check  │
+                                  │ (DISTANCE_THRESHOLD = 0.46)│
+                                  └─────────────┬─────────────┘
+                                                │
+                                        [Distance <= 0.46]
+                                                │
+                                                ▼
+                                  ┌───────────────────────────┐
+                                  │ 7. Document Diversity Cap │
+                                  │  (Max 3 Chunks / Document)│
+                                  └─────────────┬─────────────┘
+                                                │
+                                                ▼
                                  ┌───────────────────────────┐
                                  │ Grounded Context Payload  │
                                  │(status, chunks, distance) │
-                                 └───────────────────────────┘
+                                 └─────────────┬─────────────┘
 ```
 
 ---
@@ -143,10 +143,10 @@ $$\text{RRF Score}(d) = 0.85 \cdot \frac{1}{60 + r_{\text{dense}}(d)} + 0.15 \cd
 
 ### 6. Post-Retrieval Filtering & Diversity Enforcement
 
-#### A. Out-of-Bounds Distance Threshold (`DISTANCE_THRESHOLD = 0.39`)
+#### A. Out-of-Bounds Distance Threshold (`DISTANCE_THRESHOLD = 0.46`)
 * Evaluates the best retrieved chunk's Cosine Distance:
   $$\text{Cosine Distance} = 1 - \text{Cosine Similarity}$$
-* **Threshold Rule**: If $\text{Distance}_{\text{best}} > 0.39$, the query is classified as out-of-bounds, returning status `REJECTED_OUT_OF_BOUNDS`.
+* **Threshold Rule**: If $\text{Distance}_{\text{best}} > 0.46$, the query is classified as out-of-bounds, returning status `REJECTED_OUT_OF_BOUNDS`.
 
 #### B. Document Diversity Cap (`doc_counts < 3`)
 * Prevents a single document from monopolizing the prompt context window.

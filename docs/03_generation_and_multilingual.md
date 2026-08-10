@@ -140,6 +140,6 @@ References:
 1. Intercepts local safety & scheme proper noun guardrails.
 2. Rewrites/translates input into a standalone English search query.
 3. Performs 2-stage hybrid retrieval via ChromaDB & BM25.
-4. Handles distance thresholding rejections (`> 0.39`).
+4. Handles distance thresholding rejections (`> 0.46`).
 5. Synthesizes grounded response in target language via Llama 3.1 70B.
 6. Formats grouped citations & bibliography.

@@ -94,7 +94,7 @@ print(f"✅ BM25 Engine successfully indexed {len(tokenized_corpus)} chunks!")
 print(f"✅ Extracted {len(valid_title_proper_nouns)} specific proper nouns for scheme verification.")
 
 # --- STEP 6: CORE RETRIEVAL ENGINE ---
-DISTANCE_THRESHOLD = 0.39  
+DISTANCE_THRESHOLD = 0.46  
 
 def is_unsafe_medical_query(user_query):
     """Checks if the query is asking for prescription, diagnosis, or dosage."""
