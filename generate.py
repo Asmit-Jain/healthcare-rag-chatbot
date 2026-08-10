@@ -225,19 +225,23 @@ def get_universal_language_directive(clean_lang):
     Returns a generalized, universal language script directive applicable to all 100+ world languages.
     """
     if not clean_lang or clean_lang == "English":
-        return ""
+        return (
+            "\n\nCRITICAL LANGUAGE OVERRIDE: Regardless of the language used in previous messages in chat history "
+            "or the language of the user's query, you MUST write your ENTIRE final response strictly in English."
+        )
     
     if "Hinglish" in clean_lang:
         return (
-            f"\n\nSTRICT LANGUAGE DIRECTIVE: You MUST write your ENTIRE response in Hinglish "
-            f"(Hindi language written using the Roman/Latin alphabet, e.g., 'Yeh bimari machhar ke katne se hoti hai'). "
-            f"Do NOT use Devanagari script (हिंदी) or English translation."
+            f"\n\nCRITICAL LANGUAGE OVERRIDE: Regardless of the language used in previous messages in chat history, "
+            f"you MUST write your ENTIRE response in Hinglish (Hindi language written using the Roman/Latin alphabet, "
+            f"e.g., 'Yeh bimari machhar ke katne se hoti hai'). Do NOT use Devanagari script (हिंदी) or English translation."
         )
     else:
         return (
-            f"\n\nSTRICT LANGUAGE DIRECTIVE: Regardless of previous chat messages or the language of the user's input question, "
+            f"\n\nCRITICAL LANGUAGE OVERRIDE: Regardless of previous chat messages in chat history or the language of the user's input question, "
             f"you MUST write your ENTIRE final response strictly in {clean_lang} using its native primary script and writing system "
             f"(e.g., native Kanji/Hiragana for Japanese, Hangul for Korean, Devanagari for Hindi/Marathi, etc.). "
+            f"Do NOT match the language of previous assistant responses in chat history if they differ from {clean_lang}. "
             f"Do NOT use Romanized/Latin transliteration (such as Romaji or Romaja) unless Latin script is native to {clean_lang}."
         )
 
@@ -298,7 +302,7 @@ def generate_response(user_query, context_chunks, chat_history=None, temperature
             messages=messages,
             temperature=gen_temp,
             frequency_penalty=0.5,
-            presence_penalty=0.3,
+            presence_penalty=0.5,
             max_tokens=2400,
             timeout=60.0
         )
@@ -348,7 +352,7 @@ def generate_response_stream(user_query, context_chunks, chat_history=None, temp
             messages=messages,
             temperature=gen_temp,
             frequency_penalty=0.5,
-            presence_penalty=0.3,
+            presence_penalty=0.5,
             max_tokens=2400,
             stream=True,
             timeout=60.0

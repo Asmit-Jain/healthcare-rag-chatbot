@@ -547,36 +547,54 @@ with col_lang2:
         "German (Deutsch)",
         "Custom / Other"
     ]
-    current_lang = st.session_state.selected_language
-    if current_lang in language_options and current_lang != "Custom / Other":
+    current_lang = st.session_state.get("selected_language", "English")
+    if current_lang in language_options:
         default_lang_idx = language_options.index(current_lang)
     else:
         default_lang_idx = language_options.index("Custom / Other")
-        if not st.session_state.custom_language and current_lang and current_lang not in language_options:
+        if not st.session_state.get("custom_language") and current_lang not in language_options:
             st.session_state.custom_language = current_lang
+
+    def on_language_select_change():
+        chosen = st.session_state.sb_language_select
+        if chosen != "Custom / Other":
+            st.session_state.selected_language = chosen
+            if st.session_state.get("active_session_id") and mongo_active:
+                update_session_language(st.session_state.active_session_id, chosen)
+        else:
+            if st.session_state.get("custom_language"):
+                st.session_state.selected_language = st.session_state.custom_language
+
+    def on_custom_language_input_change():
+        typed = st.session_state.ti_custom_language.strip()
+        if typed:
+            st.session_state.custom_language = typed
+            st.session_state.selected_language = typed
+            if st.session_state.get("active_session_id") and mongo_active:
+                update_session_language(st.session_state.active_session_id, typed)
 
     chosen_lang_option = st.selectbox(
         "🌐 Response Language",
         language_options,
         index=default_lang_idx,
+        key="sb_language_select",
+        on_change=on_language_select_change,
         help="Select target language for AI responses."
     )
 
     if chosen_lang_option == "Custom / Other":
         custom_val = st.text_input(
             "Specify Custom Language",
-            value=st.session_state.custom_language,
-            placeholder="e.g. Punjabi, Japanese..."
+            value=st.session_state.get("custom_language", ""),
+            placeholder="e.g. Punjabi, Japanese...",
+            key="ti_custom_language",
+            on_change=on_custom_language_input_change
         )
-        st.session_state.custom_language = custom_val
-        active_target_language = custom_val.strip() if custom_val.strip() else "English"
+        active_target_language = st.session_state.get("custom_language", "").strip() or "English"
     else:
         active_target_language = chosen_lang_option
 
-    if st.session_state.selected_language != active_target_language:
-        st.session_state.selected_language = active_target_language
-        if st.session_state.active_session_id and mongo_active:
-            update_session_language(st.session_state.active_session_id, active_target_language)
+    st.session_state.selected_language = active_target_language
 
 user_query = st.chat_input("Ask MedLink...")
 
